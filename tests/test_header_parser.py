@@ -57,6 +57,9 @@ import pytest
     ('extern const void* const global;', 'global', ctypes.c_void_p),
     ('extern void const * const global;', 'global', ctypes.c_void_p),
     ('extern void const * global;', 'global', ctypes.c_void_p),
+
+    ('extern int global[34];', 'global', ctypes.ARRAY(ctypes.c_int, 34)),
+    ('extern int global[2][34];', 'global', ctypes.ARRAY(ctypes.ARRAY(ctypes.c_int, 34), 2)),
 ])
 def test_symbol(tmpdir, line, name, expected):
     header = tmpdir / 'header.h'
