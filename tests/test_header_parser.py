@@ -60,6 +60,30 @@ import pytest
 
     ('extern int global[34];', 'global', ctypes.ARRAY(ctypes.c_int, 34)),
     ('extern int global[2][34];', 'global', ctypes.ARRAY(ctypes.ARRAY(ctypes.c_int, 34), 2)),
+
+    ('foo();', 'foo', ctypes.CFUNCTYPE(ctypes.c_int)),
+    ('int foo();', 'foo', ctypes.CFUNCTYPE(ctypes.c_int)),
+    ('int foo(void);', 'foo', ctypes.CFUNCTYPE(ctypes.c_int)),
+    ('void foo(void);', 'foo', ctypes.CFUNCTYPE(None)),
+    ('void foo();', 'foo', ctypes.CFUNCTYPE(None)),
+    ('void foo(int);', 'foo', ctypes.CFUNCTYPE(None, ctypes.c_int)),
+    ('int *foo(int);', 'foo', ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_int), ctypes.c_int)),
+    ('void foo(int*);', 'foo', ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_int))),
+    ('void foo(int, int, int, int);', 'foo', ctypes.CFUNCTYPE(None,
+                                                              ctypes.c_int,
+                                                              ctypes.c_int,
+                                                              ctypes.c_int,
+                                                              ctypes.c_int)),
+    ('void foo(int, double, float, short);', 'foo', ctypes.CFUNCTYPE(None,
+                                                                     ctypes.c_int,
+                                                                     ctypes.c_double,
+                                                                     ctypes.c_float,
+                                                                     ctypes.c_short)),
+    ('long foo(int, double, float, short);', 'foo', ctypes.CFUNCTYPE(ctypes.c_long,
+                                                                     ctypes.c_int,
+                                                                     ctypes.c_double,
+                                                                     ctypes.c_float,
+                                                                     ctypes.c_short)),
 ])
 def test_symbol(tmpdir, line, name, expected):
     header = tmpdir / 'header.h'
