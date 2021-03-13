@@ -64,6 +64,7 @@
     ;; TODO: Handle anonymous and opaque types
     ;; TODO: Handle consts
     (assert (. cursor spelling))
+    (assert (!= "void" (. cursor spelling)))
     (cond [(= (. cursor kind) (. clang cindex TypeKind POINTER))
            (do (setv pointee (.get_pointee cursor))
                ;; TODO: Bug?
@@ -106,7 +107,9 @@
   (defn handle-function [^(. clang cindex Cursor) cursor]
     ;; TODO: Handle stdcall
     ;; TODO: Handle "..."
-    (setv function ((. ctypes CFUNCTYPE) (get-type-or-create-variant (. cursor result_type))
+    (setv function ((. ctypes CFUNCTYPE) (if (= "void" (. cursor result_type spelling))
+                                             None
+                                             (get-type-or-create-variant (. cursor result_type)))
                     (unpack-iterable (map (fn [x] (get-type-or-create-variant (. x type))) (.get_arguments cursor))))
           (get symbols (. cursor spelling)) function))
 
