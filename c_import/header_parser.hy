@@ -97,8 +97,8 @@
                                                  (.get_children cursor))))))
 
   (defn handle-enum [^(. clang cindex Cursor) cursor]
-    ;; TODO
-    )
+    ;; TODO use enum library
+    (assoc types (. cursor spelling) (. ctypes c_int)))
 
   (defn handle-var [^(. clang cindex Cursor) cursor]
     (setv var-type (get-type-or-create-variant (. cursor type))
