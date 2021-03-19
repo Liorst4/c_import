@@ -5,6 +5,39 @@
 
 (import clang.cindex)
 
+(setv INITIAL_TYPES (dict))
+(assoc INITIAL_TYPES
+       "char" (. ctypes c_char)
+       "signed char" (. ctypes c_char)
+       "unsigned char" (. ctypes c_ubyte)
+       "short" (. ctypes c_short)
+       "short int" (. ctypes c_short)
+       "signed short" (. ctypes c_short)
+       "signed short int" (. ctypes c_short)
+       "unsigned short" (. ctypes c_ushort)
+       "unsigned short int" (. ctypes c_ushort)
+       "int" (. ctypes c_int)
+       "signed" (. ctypes c_int)
+       "signed int" (. ctypes c_int)
+       "unsigned" (. ctypes c_uint)
+       "unsigned int" (. ctypes c_uint)
+       "long" (. ctypes c_long)
+       "long int" (. ctypes c_long)
+       "signed long" (. ctypes c_long)
+       "signed long int" (. ctypes c_long)
+       "unsigned long" (. ctypes c_ulong)
+       "unsigned long int" (. ctypes c_ulong)
+       "long long" (. ctypes c_longlong)
+       "long long int" (. ctypes c_longlong)
+       "signed long long" (. ctypes c_longlong)
+       "signed long long int" (. ctypes c_longlong)
+       "unsigned long long" (. ctypes c_ulonglong)
+       "unsigned long long int" (. ctypes c_ulonglong)
+       "float" (. ctypes c_float)
+       "double" (. ctypes c_double)
+       "long double" (. ctypes c_longdouble))
+
+
 (setv PointerWrapper (of Callable [int] object)
       TypeTable (of Dict str PointerWrapper)
       SymbolTable (of Dict str PointerWrapper))
@@ -15,50 +48,7 @@
         index ((. clang cindex Index create))
         tu ((. index parse) header)
         cursor (. tu cursor))
-
-  (assoc types
-         "char" (. ctypes c_char)
-         "signed char" (. ctypes c_char)
-
-         "unsigned char" (. ctypes c_ubyte)
-
-         "short" (. ctypes c_short)
-         "short int" (. ctypes c_short)
-         "signed short" (. ctypes c_short)
-         "signed short int" (. ctypes c_short)
-         
-         "unsigned short" (. ctypes c_ushort)
-         "unsigned short int" (. ctypes c_ushort)
-
-         "int" (. ctypes c_int)
-         "signed" (. ctypes c_int)
-         "signed int" (. ctypes c_int)
-
-         "unsigned" (. ctypes c_uint)
-         "unsigned int" (. ctypes c_uint)
-
-         "long" (. ctypes c_long)
-         "long int" (. ctypes c_long)
-         "signed long" (. ctypes c_long)
-         "signed long int" (. ctypes c_long)
-
-         "unsigned long" (. ctypes c_ulong)
-         "unsigned long int" (. ctypes c_ulong)
-
-         "long long" (. ctypes c_longlong)
-         "long long int" (. ctypes c_longlong)
-         "signed long long" (. ctypes c_longlong)
-         "signed long long int" (. ctypes c_longlong)
-
-         "unsigned long long" (. ctypes c_ulonglong)
-         "unsigned long long int" (. ctypes c_ulonglong)
-
-         "float" (. ctypes c_float)
-
-         "double" (. ctypes c_double)
-
-         "long double" (. ctypes c_longdouble))
-
+  (.update types (.copy INITIAL_TYPES))
 
   (defn get-type-or-create-variant [^(. clang cindex Type) cursor]
     ;; TODO: Handle anonymous and opaque types

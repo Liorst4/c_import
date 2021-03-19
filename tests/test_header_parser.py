@@ -3,130 +3,274 @@ import c_import
 
 import pytest
 
-@pytest.mark.parametrize('line,name,expected', [
-    ('extern char global;', 'global', ctypes.c_char),
-    ('extern signed char global;', 'global', ctypes.c_char),
-
-    ('extern unsigned char global;', 'global', ctypes.c_ubyte),
-
-    ('extern short global;', 'global', ctypes.c_short),
-    ('extern short int global;', 'global', ctypes.c_short),
-    ('extern signed short int global;', 'global', ctypes.c_short),
-    ('extern signed short global;', 'global', ctypes.c_short),
-
-    ('extern unsigned short global;', 'global', ctypes.c_ushort),
-    ('extern unsigned short int global;', 'global', ctypes.c_ushort),
-
-    ('extern int global;', 'global', ctypes.c_int),
-    ('extern signed global;', 'global', ctypes.c_int),
-    ('extern signed int global;', 'global', ctypes.c_int),
-
-    ('extern unsigned int global;', 'global', ctypes.c_uint),
-    ('extern unsigned global;', 'global', ctypes.c_uint),
-
-    ('extern long global;', 'global', ctypes.c_long),
-    ('extern long int global;', 'global', ctypes.c_long),
-    ('extern signed long global;', 'global', ctypes.c_long),
-    ('extern signed long int global;', 'global', ctypes.c_long),
-
-    ('extern unsigned long global;', 'global', ctypes.c_ulong),
-    ('extern unsigned long int global;', 'global', ctypes.c_ulong),
-
-    ('extern long long global;', 'global', ctypes.c_longlong),
-    ('extern long long int global;', 'global', ctypes.c_longlong),
-    ('extern signed long long global;', 'global', ctypes.c_longlong),
-    ('extern signed long long int global;', 'global', ctypes.c_longlong),
-
-    ('extern unsigned long long global;', 'global', ctypes.c_ulonglong),
-    ('extern unsigned long long int global;', 'global', ctypes.c_ulonglong),
-
-    ('extern float global;', 'global', ctypes.c_float),
-
-    ('extern double global;', 'global', ctypes.c_double),
-
-    ('extern long double global;', 'global', ctypes.c_longdouble),
-
-    ('extern int* global;', 'global', ctypes.POINTER(ctypes.c_int)),
-    ('extern int* const global;', 'global', ctypes.POINTER(ctypes.c_int)),
-    ('extern const int* const global;', 'global', ctypes.POINTER(ctypes.c_int)),
-    ('extern int const * const global;', 'global', ctypes.POINTER(ctypes.c_int)),
-    ('extern int const * global;', 'global', ctypes.POINTER(ctypes.c_int)),
-
-    ('extern void* global;', 'global', ctypes.c_void_p),
-    ('extern void* const global;', 'global', ctypes.c_void_p),
-    ('extern const void* const global;', 'global', ctypes.c_void_p),
-    ('extern void const * const global;', 'global', ctypes.c_void_p),
-    ('extern void const * global;', 'global', ctypes.c_void_p),
-
-    ('extern int global[34];', 'global', ctypes.ARRAY(ctypes.c_int, 34)),
-    ('extern int global[2][34];', 'global', ctypes.ARRAY(ctypes.ARRAY(ctypes.c_int, 34), 2)),
-
-    ('foo();', 'foo', ctypes.CFUNCTYPE(ctypes.c_int)),
-    ('int foo();', 'foo', ctypes.CFUNCTYPE(ctypes.c_int)),
-    ('int foo(void);', 'foo', ctypes.CFUNCTYPE(ctypes.c_int)),
-    ('void foo(void);', 'foo', ctypes.CFUNCTYPE(None)),
-    ('void foo();', 'foo', ctypes.CFUNCTYPE(None)),
-    ('void foo(int);', 'foo', ctypes.CFUNCTYPE(None, ctypes.c_int)),
-    ('int *foo(int);', 'foo', ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_int), ctypes.c_int)),
-    ('void foo(int*);', 'foo', ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_int))),
-    ('void foo(int, int, int, int);', 'foo', ctypes.CFUNCTYPE(None,
-                                                              ctypes.c_int,
-                                                              ctypes.c_int,
-                                                              ctypes.c_int,
-                                                              ctypes.c_int)),
-    ('void foo(int, double, float, short);', 'foo', ctypes.CFUNCTYPE(None,
-                                                                     ctypes.c_int,
-                                                                     ctypes.c_double,
-                                                                     ctypes.c_float,
-                                                                     ctypes.c_short)),
-    ('long foo(int, double, float, short);', 'foo', ctypes.CFUNCTYPE(ctypes.c_long,
-                                                                     ctypes.c_int,
-                                                                     ctypes.c_double,
-                                                                     ctypes.c_float,
-                                                                     ctypes.c_short)),
-])
-def test_symbol(tmpdir, line, name, expected):
-    header = tmpdir / 'header.h'
-    header.write(line)
-    _, symbols = c_import.header_parser.parse_header(header)
-    assert symbols[name] == expected
-
-
-# TODO: Test typedef, function pointer typedef
-# TODO: Test struct
+# TODO: Test function pointer typedef
 # TODO: Test multiple structs
-@pytest.mark.parametrize('content,expected', [
-    ("typedef unsigned int thing;", {"thing": ctypes.c_uint}),
 
-    (
-        "struct thing {};",
-        {
-            "thing": type("thing", (ctypes.Structure,),
-                          {"_fields_": []}
-            )
-        }
-    ),
+def struct_are_equivalent(a: type, b: type) -> bool:
+    if issubclass(a, ctypes.Structure):
+        for (f_a, f_b) in zip(a._fields_, b._fields_):
+            f_a_name, f_a_type = f_a
+            f_b_name, f_b_type = f_b
+            if f_a_name != f_b_name or \
+               not struct_are_equivalent(f_a_type, f_b_type):
+                return False
+        return True
+    else:
+        return a == b
 
+@pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
+        # empty header
+        (
+            '',
+            {},
+            {}
+        ),
+
+        # basic type symbols
+        (
+'''
+    char global1;
+    signed char global2;
+
+    unsigned char global3;
+
+    short global4;
+    short int global5;
+    signed short int global6;
+    signed short global7;
+
+    unsigned short global8;
+    unsigned short int global9;
+
+    int global10;
+    signed global11;
+    signed int global12;
+
+    unsigned int global13;
+    unsigned global14;
+
+    long global15;
+    long int global16;
+    signed long global17;
+    signed long int global18;
+
+    unsigned long global19;
+    unsigned long int global20;
+
+    long long global21;
+    long long int global22;
+    signed long long global23;
+    signed long long int global24;
+
+    unsigned long long global25;
+    unsigned long long int global26;
+
+    float global27;
+
+    double global28;
+
+    long double global29;
+
+    int* global30;
+    int* const global31;
+    const int* const global32;
+    int const * const global33;
+    int const * global34;
+
+    void* global35;
+    void* const global36;
+    const void* const global37;
+    void const * const global38;
+    void const * global39;
+
+    int global40[34];
+    int global41[2][34];
+
+    foo1();
+    int foo2();
+    int foo3(void);
+
+    void foo4(void);
+    void foo5();
+
+    void foo6(int);
+
+    int *foo7(int);
+
+    void foo8(int*);
+
+    void foo9(int, int, int, int);
+
+    void foo10(int, double, float, short);
+
+    long foo11(int, double, float, short);
+''',
+            {
+                'const int': ctypes.c_int,
+            },
+            {
+                'global1': ctypes.c_char,
+                'global2': ctypes.c_char,
+
+                'global3': ctypes.c_ubyte,
+
+                'global4': ctypes.c_short,
+                'global5': ctypes.c_short,
+                'global6': ctypes.c_short,
+                'global7': ctypes.c_short,
+
+                'global8': ctypes.c_ushort,
+                'global9': ctypes.c_ushort,
+
+                'global10': ctypes.c_int,
+                'global11': ctypes.c_int,
+                'global12': ctypes.c_int,
+
+                'global13': ctypes.c_uint,
+                'global14': ctypes.c_uint,
+
+                'global15': ctypes.c_long,
+                'global16': ctypes.c_long,
+                'global17': ctypes.c_long,
+                'global18': ctypes.c_long,
+
+                'global19': ctypes.c_ulong,
+                'global20': ctypes.c_ulong,
+
+                'global21': ctypes.c_longlong,
+                'global22': ctypes.c_longlong,
+                'global23': ctypes.c_longlong,
+                'global24': ctypes.c_longlong,
+
+                'global25': ctypes.c_ulonglong,
+                'global26': ctypes.c_ulonglong,
+
+                'global27': ctypes.c_float,
+
+                'global28': ctypes.c_double,
+
+                'global29': ctypes.c_longdouble,
+
+                'global30': ctypes.POINTER(ctypes.c_int),
+                'global31': ctypes.POINTER(ctypes.c_int),
+                'global32': ctypes.POINTER(ctypes.c_int),
+                'global33': ctypes.POINTER(ctypes.c_int),
+                'global34': ctypes.POINTER(ctypes.c_int),
+
+                'global35': ctypes.c_void_p,
+                'global36': ctypes.c_void_p,
+                'global37': ctypes.c_void_p,
+                'global38': ctypes.c_void_p,
+                'global39': ctypes.c_void_p,
+
+                'global40': ctypes.ARRAY(ctypes.c_int, 34),
+                'global41': ctypes.ARRAY(ctypes.ARRAY(ctypes.c_int, 34), 2),
+
+
+                'foo1': ctypes.CFUNCTYPE(ctypes.c_int),
+                'foo2': ctypes.CFUNCTYPE(ctypes.c_int),
+                'foo3': ctypes.CFUNCTYPE(ctypes.c_int),
+
+                'foo4': ctypes.CFUNCTYPE(None),
+                'foo5': ctypes.CFUNCTYPE(None),
+
+                'foo6': ctypes.CFUNCTYPE(None, ctypes.c_int),
+                'foo7': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_int), ctypes.c_int),
+                'foo8':ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_int)),
+                'foo9':ctypes.CFUNCTYPE(None,
+                                        ctypes.c_int,
+                                        ctypes.c_int,
+                                        ctypes.c_int,
+                                        ctypes.c_int),
+                'foo10': ctypes.CFUNCTYPE(None,
+                                          ctypes.c_int,
+                                          ctypes.c_double,
+                                          ctypes.c_float,
+                                          ctypes.c_short),
+                'foo11': ctypes.CFUNCTYPE(ctypes.c_long,
+                                          ctypes.c_int,
+                                          ctypes.c_double,
+                                          ctypes.c_float,
+                                          ctypes.c_short),
+            }
+        ),
+
+        # basic typedef
+        (
+'''
+typedef int thing;
+thing my_thing;
+''',
+            {
+                'thing': ctypes.c_int,
+            },
+            {
+                'my_thing': ctypes.c_int,
+            },
+        ),
+
+        # empty struct
+        (
+            "struct thing {};",
+            {
+                'thing': type(
+                    "thing",
+                    (ctypes.Structure,),
+                    {
+                        '_fields_': [],
+                    }
+                ),
+            },
+            {},
+        ),
+
+        # struct with one field
+        (
 '''
 struct thing {
     int x;
 };
 ''',
-        {
-            "thing": type("thing", (ctypes.Structure,),
-                          {"_fields_": [("x", ctypes.c_int)]}
-            )
-        }
+            {
+                'thing': type(
+                    "thing",
+                    (ctypes.Structure,),
+                    {
+                        '_fields_': [("x", ctypes.c_int)],
+                    },
+                ),
+            },
+            {},
+        ),
     ),
-])
-def test_types(tmpdir, content, expected):
+    ids=(
+        'empty header',
+        'basic type symbols',
+        'basic typedef',
+        'empty struct',
+        'struct with one field',
+    )
+)
+def test_header(tmpdir,
+                header_content: str,
+                expected_types,
+                expected_symbols
+):
+
     header = tmpdir / 'header.h'
-    header.write(content)
-    types, _ = c_import.header_parser.parse_header(header)
-    for (key, value) in expected.items():
-        if hasattr(types[key], "_fields_"):
-            assert types[key]._fields_ == value._fields_
+    header.write(header_content)
+    types, symbols = c_import.header_parser.parse_header(header)
+
+    # Test symbols
+    expected_types.update(c_import.header_parser.INITIAL_TYPES.copy())
+    assert set(types.keys()) == set(expected_types.keys())
+    for (key, value) in types.items():
+        if issubclass(value, ctypes.Structure):
+            assert struct_are_equivalent(value, expected_types[key])
         else:
-            assert types[key] == value
-            assert not hasattr(value, "_fields_")
+            assert value == expected_types[key]
+
+    # Test types
+    assert symbols == expected_symbols
+
