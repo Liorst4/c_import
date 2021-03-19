@@ -1,7 +1,7 @@
 (import ctypes
         pathlib
         [collections [defaultdict]]
-        [typing [Dict Callable Tuple]])
+        [typing [Dict Callable Tuple NamedTuple]])
 
 (import clang.cindex)
 
@@ -41,77 +41,81 @@
        "double" (. ctypes c_double)
        "long double" (. ctypes c_longdouble))
 
+(defclass CInterface [NamedTuple]
+  (setv ^TypeTable types (dict)
+        ^SymbolTable symbols (dict)))
 
-(defn parse-header ^(of Tuple TypeTable SymbolTable) [^(. pathlib Path) header]
-  (setv ^SymbolTable symbols (dict)
-        ^TypeTable types (defaultdict (fn [] (. ctypes c_int)) (dict))
+(defn get-type-or-create-variant ^PointerWrapper [^CInterface scope ^(. clang cindex Type) clang-type]
+  ;; TODO: Handle anonymous and opaque types
+  ;; TODO: Handle consts
+  (assert (. clang-type spelling))
+  (assert (!= "void" (. clang-type spelling)))
+  (cond [(= (. clang-type kind) (. clang cindex TypeKind POINTER))
+         (do (setv pointee (.get_pointee clang-type))
+             ;; TODO: Bug?
+             (if (in (. pointee spelling) ["void" "const void" "void const"])
+                 (. ctypes c_void_p)
+                 ((. ctypes POINTER) (get-type-or-create-variant scope pointee))))]
+
+        [(= (. clang-type kind) (. clang cindex TypeKind CONSTANTARRAY))
+         ((. ctypes ARRAY) (get-type-or-create-variant scope (. clang-type element_type)) (. clang-type element_count))]
+
+        [True (get (. scope types) (. clang-type spelling))]))
+
+(defn add-typedef [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (assoc (. scope types)
+         (. cursor spelling)
+         (get-type-or-create-variant scope (. cursor underlying_typedef_type))))
+
+(defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (setv struct (type (. cursor spelling) (tuple [(. ctypes Structure)]) (dict)))
+  (assoc (. scope types) (. cursor spelling) struct)
+  (setv (. struct _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant scope (. c type))]))
+                                       ;; TODO Handle non fields things
+                                       (filter (fn [x] (= (. x kind) (. clang cindex CursorKind FIELD_DECL)))
+                                               (.get_children cursor))))))
+
+(defn add-union [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (setv union (type (. cursor spelling) (tuple [(. ctypes Union)]) (dict)))
+  (assoc (. scope types) (. cursor spelling) union)
+  (setv (. union _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant scope (. c type))]))
+                                      ;; TODO Handle non fields things
+                                      (filter (fn [x] (= (. x kind) (. clang cindex CursorKind FIELD_DECL)))
+                                              (.get_children cursor))))))
+
+(defn add-enum [^CInterface scope ^(. clang cindex Cursor) cursor]
+  ;; TODO use enum library
+  (assoc (. scope types) (. cursor spelling) (. ctypes c_int)))
+
+(defn add-var [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (setv var-type (get-type-or-create-variant scope (. cursor type)))
+  (assoc (. scope symbols) (. cursor spelling) var-type))
+
+(defn add-function [^CInterface scope ^(. clang cindex Cursor) cursor]
+  ;; TODO: Handle stdcall
+  ;; TODO: Handle "..."
+  (setv function ((. ctypes CFUNCTYPE) (if (= "void" (. cursor result_type spelling))
+                                           None
+                                           (get-type-or-create-variant scope (. cursor result_type)))
+                  (unpack-iterable (map (fn [x] (get-type-or-create-variant scope (. x type))) (.get_arguments cursor)))))
+  (assoc (. scope symbols) (. cursor spelling) function))
+
+(defn handle-decleration [^CInterface scope ^(. clang cindex Cursor) cursor]
+  ;; Use a macro?
+  (cond [(= (. cursor kind) (. clang cindex CursorKind TYPEDEF_DECL)) (add-typedef scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind STRUCT_DECL)) (add-struct scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind UNION_DECL)) (add-union scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind ENUM_DECL)) (add-enum scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind VAR_DECL)) (add-var scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind FUNCTION_DECL)) (add-function scope cursor)]
+        [True (for [c (.get_children cursor)]
+                (handle-decleration scope c))]))
+
+(defn parse-header ^CInterface [^(. pathlib Path) header]
+  (setv scope (CInterface (defaultdict (fn [] (. ctypes c_int)) (dict)) (dict))
         index ((. clang cindex Index create))
         tu ((. index parse) header)
         cursor (. tu cursor))
-  (.update types (.copy INITIAL_TYPES))
-
-  (defn get-type-or-create-variant [^(. clang cindex Type) clang-type]
-    ;; TODO: Handle anonymous and opaque types
-    ;; TODO: Handle consts
-    (assert (. clang-type spelling))
-    (assert (!= "void" (. clang-type spelling)))
-    (cond [(= (. clang-type kind) (. clang cindex TypeKind POINTER))
-           (do (setv pointee (.get_pointee clang-type))
-               ;; TODO: Bug?
-               (if (in (. pointee spelling) ["void" "const void" "void const"])
-                   (. ctypes c_void_p)
-                   ((. ctypes POINTER) (get-type-or-create-variant pointee))))]
-
-          [(= (. clang-type kind) (. clang cindex TypeKind CONSTANTARRAY))
-           ((. ctypes ARRAY) (get-type-or-create-variant (. clang-type element_type)) (. clang-type element_count))]
-
-          [True (get types (. clang-type spelling))]))
-
-  (defn handle-typedef [^(. clang cindex Cursor) cursor]
-    (setv (get types (. cursor spelling)) (get-type-or-create-variant (. cursor underlying_typedef_type))))
-
-  (defn handle-struct [^(. clang cindex Cursor) cursor]
-    (setv struct (type (. cursor spelling) (tuple [(. ctypes Structure)]) (dict))
-          (get types (. cursor spelling)) struct
-          (. struct _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant (. c type))]))
-                                         ;; TODO Handle non fields things
-                                         (filter (fn [x] (= (. x kind) (. clang cindex CursorKind FIELD_DECL)))
-                                                 (.get_children cursor))))))
-
-  (defn handle-union [^(. clang cindex Cursor) cursor]
-    (setv union (type (. cursor spelling) (tuple [(. ctypes Union)]) (dict))
-          (get types (. cursor spelling)) union
-          (. union _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant (. c type))]))
-                                         ;; TODO Handle non fields things
-                                         (filter (fn [x] (= (. x kind) (. clang cindex CursorKind FIELD_DECL)))
-                                                 (.get_children cursor))))))
-
-  (defn handle-enum [^(. clang cindex Cursor) cursor]
-    ;; TODO use enum library
-    (assoc types (. cursor spelling) (. ctypes c_int)))
-
-  (defn handle-var [^(. clang cindex Cursor) cursor]
-    (setv var-type (get-type-or-create-variant (. cursor type))
-          (get symbols (. cursor spelling)) var-type))
-
-  (defn handle-function [^(. clang cindex Cursor) cursor]
-    ;; TODO: Handle stdcall
-    ;; TODO: Handle "..."
-    (setv function ((. ctypes CFUNCTYPE) (if (= "void" (. cursor result_type spelling))
-                                             None
-                                             (get-type-or-create-variant (. cursor result_type)))
-                    (unpack-iterable (map (fn [x] (get-type-or-create-variant (. x type))) (.get_arguments cursor))))
-          (get symbols (. cursor spelling)) function))
-
-  (defn handle-cursor [^(. clang cindex Cursor) cursor]
-    (cond [(= (. cursor kind) (. clang cindex CursorKind TYPEDEF_DECL)) (handle-typedef cursor)]
-          [(= (. cursor kind) (. clang cindex CursorKind STRUCT_DECL)) (handle-struct cursor)]
-          [(= (. cursor kind) (. clang cindex CursorKind UNION_DECL)) (handle-union cursor)]
-          [(= (. cursor kind) (. clang cindex CursorKind ENUM_DECL)) (handle-enum cursor)]
-          [(= (. cursor kind) (. clang cindex CursorKind VAR_DECL)) (handle-var cursor)]
-          [(= (. cursor kind) (. clang cindex CursorKind FUNCTION_DECL)) (handle-function cursor)]
-          [True (for [c (.get_children cursor)]
-                  (handle-cursor c))]))
-
-  (handle-cursor cursor)
-  (tuple [(dict types) symbols]))
+  (.update (. scope types) (.copy INITIAL_TYPES))
+  (handle-decleration scope cursor)
+  scope)
