@@ -87,6 +87,8 @@ def struct_are_equivalent(a: type, b: type) -> bool:
     int global40[34];
     int global41[2][34];
 
+    char* global42;
+
     foo1();
     int foo2();
     int foo3(void);
@@ -169,6 +171,7 @@ def struct_are_equivalent(a: type, b: type) -> bool:
                 'global40': ctypes.ARRAY(ctypes.c_int, 34),
                 'global41': ctypes.ARRAY(ctypes.ARRAY(ctypes.c_int, 34), 2),
 
+                'global42': ctypes.POINTER(ctypes.c_char),
 
                 'foo1': ctypes.CFUNCTYPE(ctypes.c_int),
                 'foo2': ctypes.CFUNCTYPE(ctypes.c_int),
