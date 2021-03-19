@@ -5,7 +5,11 @@
 
 (import clang.cindex)
 
-(setv INITIAL_TYPES (dict))
+(setv PointerWrapper (of Callable [int] object)
+      TypeTable (of Dict str PointerWrapper)
+      SymbolTable (of Dict str PointerWrapper)
+      ^TypeTable INITIAL_TYPES (dict))
+
 (assoc INITIAL_TYPES
        "char" (. ctypes c_char)
        "signed char" (. ctypes c_char)
@@ -37,10 +41,6 @@
        "double" (. ctypes c_double)
        "long double" (. ctypes c_longdouble))
 
-
-(setv PointerWrapper (of Callable [int] object)
-      TypeTable (of Dict str PointerWrapper)
-      SymbolTable (of Dict str PointerWrapper))
 
 (defn parse-header ^(of Tuple TypeTable SymbolTable) [^(. pathlib Path) header]
   (setv ^SymbolTable symbols (dict)
