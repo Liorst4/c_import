@@ -90,3 +90,43 @@ def test_symbol(tmpdir, line, name, expected):
     header.write(line)
     _, symbols = c_import.header_parser.parse_header(header)
     assert symbols[name] == expected
+
+
+# TODO: Test typedef, function pointer typedef
+# TODO: Test struct
+# TODO: Test multiple structs
+@pytest.mark.parametrize('content,expected', [
+    ("typedef unsigned int thing;", {"thing": ctypes.c_uint}),
+
+    (
+        "struct thing {};",
+        {
+            "thing": type("thing", (ctypes.Structure,),
+                          {"_fields_": []}
+            )
+        }
+    ),
+
+    (
+'''
+struct thing {
+    int x;
+};
+''',
+        {
+            "thing": type("thing", (ctypes.Structure,),
+                          {"_fields_": [("x", ctypes.c_int)]}
+            )
+        }
+    ),
+])
+def test_types(tmpdir, content, expected):
+    header = tmpdir / 'header.h'
+    header.write(content)
+    types, _ = c_import.header_parser.parse_header(header)
+    for (key, value) in expected.items():
+        if hasattr(types[key], "_fields_"):
+            assert types[key]._fields_ == value._fields_
+        else:
+            assert types[key] == value
+            assert not hasattr(value, "_fields_")
