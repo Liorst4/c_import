@@ -105,6 +105,8 @@ def struct_are_equivalent(a: type, b: type) -> bool:
     void foo10(int, double, float, short);
 
     long foo11(int, double, float, short);
+
+    int (*foo12) (long);
 ''',
             {
                 'const int': ctypes.c_int,
@@ -193,6 +195,7 @@ def struct_are_equivalent(a: type, b: type) -> bool:
                                           ctypes.c_double,
                                           ctypes.c_float,
                                           ctypes.c_short),
+                'foo12': ctypes.POINTER(ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_long)),
             }
         ),
 
