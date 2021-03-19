@@ -7,7 +7,7 @@ import pytest
 # TODO: Test multiple structs
 
 def struct_are_equivalent(a: type, b: type) -> bool:
-    if issubclass(a, ctypes.Structure):
+    if issubclass(a, (ctypes.Structure, ctypes.Union)):
         for (f_a, f_b) in zip(a._fields_, b._fields_):
             f_a_name, f_a_type = f_a
             f_b_name, f_b_type = f_b
@@ -246,6 +246,40 @@ struct thing {
             },
             {},
         ),
+
+
+        # empty union
+        (
+            "union x {};",
+            {
+                'x': type('x', (ctypes.Union,), {'_fields_': []})
+            },
+            {}
+        ),
+
+        # basic union
+        (
+'''
+union x {
+    int y;
+    char z;
+};
+''',
+            {
+                'x': type(
+                    'x',
+                    (ctypes.Union,),
+                    {
+                        '_fields_': [
+                            ('y', ctypes.c_int),
+                            ('z', ctypes.c_char),
+                        ],
+                    }
+                ),
+            },
+            {}
+        ),
+
     ),
     ids=(
         'empty header',
@@ -253,6 +287,8 @@ struct thing {
         'basic typedef',
         'empty struct',
         'struct with one field',
+        'empty union',
+        'basic union',
     )
 )
 def test_header(tmpdir,
@@ -269,7 +305,7 @@ def test_header(tmpdir,
     expected_types.update(c_import.header_parser.INITIAL_TYPES.copy())
     assert set(types.keys()) == set(expected_types.keys())
     for (key, value) in types.items():
-        if issubclass(value, ctypes.Structure):
+        if issubclass(value, (ctypes.Structure, ctypes.Union)):
             assert struct_are_equivalent(value, expected_types[key])
         else:
             assert value == expected_types[key]
