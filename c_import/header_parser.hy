@@ -50,22 +50,22 @@
         cursor (. tu cursor))
   (.update types (.copy INITIAL_TYPES))
 
-  (defn get-type-or-create-variant [^(. clang cindex Type) cursor]
+  (defn get-type-or-create-variant [^(. clang cindex Type) clang-type]
     ;; TODO: Handle anonymous and opaque types
     ;; TODO: Handle consts
-    (assert (. cursor spelling))
-    (assert (!= "void" (. cursor spelling)))
-    (cond [(= (. cursor kind) (. clang cindex TypeKind POINTER))
-           (do (setv pointee (.get_pointee cursor))
+    (assert (. clang-type spelling))
+    (assert (!= "void" (. clang-type spelling)))
+    (cond [(= (. clang-type kind) (. clang cindex TypeKind POINTER))
+           (do (setv pointee (.get_pointee clang-type))
                ;; TODO: Bug?
                (if (in (. pointee spelling) ["void" "const void" "void const"])
                    (. ctypes c_void_p)
                    ((. ctypes POINTER) (get-type-or-create-variant pointee))))]
 
-          [(= (. cursor kind) (. clang cindex TypeKind CONSTANTARRAY))
-           ((. ctypes ARRAY) (get-type-or-create-variant (. cursor element_type)) (. cursor element_count))]
+          [(= (. clang-type kind) (. clang cindex TypeKind CONSTANTARRAY))
+           ((. ctypes ARRAY) (get-type-or-create-variant (. clang-type element_type)) (. clang-type element_count))]
 
-          [True (get types (. cursor spelling))]))
+          [True (get types (. clang-type spelling))]))
 
   (defn handle-typedef [^(. clang cindex Cursor) cursor]
     (setv (get types (. cursor spelling)) (get-type-or-create-variant (. cursor underlying_typedef_type))))
