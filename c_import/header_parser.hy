@@ -73,7 +73,7 @@
   (defn handle-struct [^(. clang cindex Cursor) cursor]
     (setv struct (type (. cursor spelling) (tuple [(. ctypes Structure)]) (dict))
           (get types (. cursor spelling)) struct
-          (. struct _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant c)]))
+          (. struct _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant (. c type))]))
                                          ;; TODO Handle non fields things
                                          (filter (fn [x] (= (. x kind) (. clang cindex CursorKind FIELD_DECL)))
                                                  (.get_children cursor))))))
@@ -81,7 +81,7 @@
   (defn handle-union [^(. clang cindex Cursor) cursor]
     (setv union (type (. cursor spelling) (tuple [(. ctypes Union)]) (dict))
           (get types (. cursor spelling)) union
-          (. union _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant c)]))
+          (. union _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant (. c type))]))
                                          ;; TODO Handle non fields things
                                          (filter (fn [x] (= (. x kind) (. clang cindex CursorKind FIELD_DECL)))
                                                  (.get_children cursor))))))
