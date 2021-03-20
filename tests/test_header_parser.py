@@ -283,6 +283,17 @@ union x {
             {}
         ),
 
+        # Void typedef
+        (
+'''
+typedef void my_type;
+''',
+            {
+                'my_type': None,
+            },
+            {}
+        ),
+
     ),
     ids=(
         'empty header',
@@ -292,6 +303,7 @@ union x {
         'struct with one field',
         'empty union',
         'basic union',
+        'void typedef',
     )
 )
 def test_header(tmpdir,
@@ -308,7 +320,7 @@ def test_header(tmpdir,
     expected_types.update(c_import.header_parser.INITIAL_TYPES.copy())
     assert set(types.keys()) == set(expected_types.keys())
     for (key, value) in types.items():
-        if issubclass(value, (ctypes.Structure, ctypes.Union)):
+        if value and issubclass(value, (ctypes.Structure, ctypes.Union)):
             assert struct_are_equivalent(value, expected_types[key])
         else:
             assert value == expected_types[key]

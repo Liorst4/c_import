@@ -1,13 +1,14 @@
 (import ctypes
         pathlib
         [collections [defaultdict]]
-        [typing [Dict Callable Tuple NamedTuple]])
+        [typing [Dict Callable Tuple NamedTuple Union]])
 
 (import clang.cindex)
 
-(setv PointerWrapper (of Callable [int] object)
-      TypeTable (of Dict str PointerWrapper)
-      SymbolTable (of Dict str PointerWrapper)
+(setv VoidType (type None)
+      OptionalPointerWrapper (of Union (of Callable [int] object) VoidType)
+      TypeTable (of Dict str OptionalPointerWrapper)
+      SymbolTable (of Dict str OptionalPointerWrapper)
       ^TypeTable INITIAL_TYPES (dict))
 
 (assoc INITIAL_TYPES
@@ -45,18 +46,15 @@
   (setv ^TypeTable types (dict)
         ^SymbolTable symbols (dict)))
 
-(defn get-type-or-create-variant ^PointerWrapper [^CInterface scope ^(. clang cindex Type) clang-type]
+(defn get-type-or-create-variant ^OptionalPointerWrapper [^CInterface scope ^(. clang cindex Type) clang-type]
   ;; TODO: Handle anonymous and opaque types
   ;; TODO: Handle consts
   (assert (. clang-type spelling))
-  (assert (!= "void" (. clang-type spelling)))
   ;; TODO: Use macro for kind switch?
   (cond [(= (. clang-type kind) (. clang cindex TypeKind POINTER))
-         (do (setv pointee (.get_pointee clang-type))
-             ;; TODO: Bug?
-             (if (in (. pointee spelling) ["void" "const void" "void const"])
-                 (. ctypes c_void_p)
-                 ((. ctypes POINTER) (get-type-or-create-variant scope pointee))))]
+         (->> (.get_pointee clang-type)
+              (get-type-or-create-variant scope)
+              (.POINTER ctypes))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind CONSTANTARRAY))
          ((. ctypes ARRAY) (get-type-or-create-variant scope (. clang-type element_type)) (. clang-type element_count))]
@@ -71,6 +69,8 @@
                           .argument_types
                           (map (fn [x] (get-type-or-create-variant scope x)))
                           unpack-iterable))]
+
+        [(= (. clang-type kind) (. clang cindex TypeKind VOID)) None]
 
         [True (get (. scope types) (. clang-type spelling))]))
 
