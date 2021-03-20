@@ -50,6 +50,7 @@
   ;; TODO: Handle consts
   (assert (. clang-type spelling))
   (assert (!= "void" (. clang-type spelling)))
+  ;; TODO: Use macro for kind switch?
   (cond [(= (. clang-type kind) (. clang cindex TypeKind POINTER))
          (do (setv pointee (.get_pointee clang-type))
              ;; TODO: Bug?
@@ -59,6 +60,17 @@
 
         [(= (. clang-type kind) (. clang cindex TypeKind CONSTANTARRAY))
          ((. ctypes ARRAY) (get-type-or-create-variant scope (. clang-type element_type)) (. clang-type element_count))]
+
+        [(= (. clang-type kind) (. clang cindex TypeKind FUNCTIONPROTO))
+         ;; TODO: Handle `...`
+         (.CFUNCTYPE ctypes
+                     (->> clang-type
+                          .get_result
+                          (get-type-or-create-variant scope))
+                     (->> clang-type
+                          .argument_types
+                          (map (fn [x] (get-type-or-create-variant scope x)))
+                          unpack-iterable))]
 
         [True (get (. scope types) (. clang-type spelling))]))
 
