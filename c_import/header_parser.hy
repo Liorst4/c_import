@@ -1,13 +1,17 @@
 (import ctypes
         pathlib
+        enum
         [collections [defaultdict]]
         [typing [Dict Callable Tuple NamedTuple Union]])
 
 (import clang.cindex)
 
 (setv VoidType (type None)
-      OptionalPointerWrapper (of Union (of Callable [int] object) VoidType)
-      TypeTable (of Dict str OptionalPointerWrapper)
+      OptionalPointerWrapper (of Union (of Callable [int] object)
+                                 VoidType)
+      TypeTable (of Dict str (of Union
+                                 OptionalPointerWrapper
+                                 (. enum IntEnum)))
       SymbolTable (of Dict str OptionalPointerWrapper)
       ^TypeTable INITIAL_TYPES (dict))
 
@@ -96,8 +100,18 @@
                                               (.get_children cursor))))))
 
 (defn add-enum [^CInterface scope ^(. clang cindex Cursor) cursor]
-  ;; TODO use enum library
-  (assoc (. scope types) (. cursor spelling) (. ctypes c_int)))
+  (setv enum-name (. cursor spelling))
+  (assoc (. scope types)
+         enum-name
+         (.IntEnum enum
+                   enum-name
+                   (->
+                     (map (fn [c] (do
+                                    (assert (= (. clang cindex CursorKind ENUM_CONSTANT_DECL)
+                                               (. c kind)))
+                                    (. c spelling)))
+                          (.get_children cursor))
+                     list))))
 
 (defn add-var [^CInterface scope ^(. clang cindex Cursor) cursor]
   (setv var-type (get-type-or-create-variant scope (. cursor type)))
