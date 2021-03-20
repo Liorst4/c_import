@@ -120,8 +120,14 @@
 (defn add-function [^CInterface scope ^(. clang cindex Cursor) cursor]
   ;; TODO: Handle stdcall
   ;; TODO: Handle "..."
-  (setv function ((. ctypes CFUNCTYPE)  (get-type-or-create-variant scope (. cursor result_type))
-                  (unpack-iterable (map (fn [x] (get-type-or-create-variant scope (. x type))) (.get_arguments cursor)))))
+  (setv function (.CFUNCTYPE ctypes
+                             (->> (. cursor result_type)
+                                  (get-type-or-create-variant scope))
+                             (->> cursor
+                                  .get_arguments
+                                  (map (fn [x] (->> (. x type)
+                                                    (get-type-or-create-variant scope))))
+                                  unpack-iterable)))
   (assoc (. scope symbols) (. cursor spelling) function))
 
 (defn handle-decleration [^CInterface scope ^(. clang cindex Cursor) cursor]
