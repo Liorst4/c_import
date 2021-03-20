@@ -120,9 +120,7 @@
 (defn add-function [^CInterface scope ^(. clang cindex Cursor) cursor]
   ;; TODO: Handle stdcall
   ;; TODO: Handle "..."
-  (setv function ((. ctypes CFUNCTYPE) (if (= "void" (. cursor result_type spelling))
-                                           None
-                                           (get-type-or-create-variant scope (. cursor result_type)))
+  (setv function ((. ctypes CFUNCTYPE)  (get-type-or-create-variant scope (. cursor result_type))
                   (unpack-iterable (map (fn [x] (get-type-or-create-variant scope (. x type))) (.get_arguments cursor)))))
   (assoc (. scope symbols) (. cursor spelling) function))
 
