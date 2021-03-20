@@ -1,5 +1,6 @@
 import ctypes
 import c_import
+import enum
 
 import pytest
 
@@ -294,6 +295,21 @@ typedef void my_type;
             {}
         ),
 
+        # enum
+        (
+'''
+enum thing {
+   A,
+   B,
+   C,
+};
+''',
+            {
+                'thing': enum.IntEnum('thing', ('A', 'B', 'C')),
+            },
+            {}
+        ),
+
     ),
     ids=(
         'empty header',
@@ -304,6 +320,7 @@ typedef void my_type;
         'empty union',
         'basic union',
         'void typedef',
+        'basic enum',
     )
 )
 def test_header(tmpdir,
@@ -322,6 +339,8 @@ def test_header(tmpdir,
     for (key, value) in types.items():
         if value and issubclass(value, (ctypes.Structure, ctypes.Union)):
             assert struct_are_equivalent(value, expected_types[key])
+        elif value and issubclass(value, enum.Enum):
+            assert value.__members__ == expected_types[key].__members__
         else:
             assert value == expected_types[key]
 
