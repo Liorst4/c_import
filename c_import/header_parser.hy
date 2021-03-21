@@ -76,7 +76,13 @@
 
         [(= (. clang-type kind) (. clang cindex TypeKind VOID)) None]
 
-        [True (get (. scope types) (. clang-type spelling))]))
+        [True (do
+                (setv type-id (. clang-type spelling))
+                (when (->> ["enum" "struct" "union"]
+                           (map (fn [x] (.startswith type-id x)))
+                           any)
+                  (setv type-id (. (.get_declaration clang-type) spelling)))
+                (get (. scope types) type-id))]))
 
 (defn add-typedef [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assoc (. scope types)
