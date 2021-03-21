@@ -82,7 +82,10 @@
                            (map (fn [x] (.startswith type-id x)))
                            any)
                   (setv type-id (. (.get_declaration clang-type) spelling)))
-                (get (. scope types) type-id))]))
+                (setv existing-type (get (. scope types) type-id))
+                (if (issubclass existing-type (. enum IntEnum))
+                    (. ctypes c_int)
+                    existing-type))]))
 
 (defn add-typedef [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assoc (. scope types)
