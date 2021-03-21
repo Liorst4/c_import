@@ -310,6 +310,26 @@ enum thing {
             {}
         ),
 
+        # Functions with enums
+        (
+'''
+enum thing {
+   A,
+   B,
+   C,
+};
+
+enum thing func1(void);
+void func2(enum thing argument);
+''',
+            {
+                'thing': enum.IntEnum('thing', ('A', 'B', 'C')),
+            },
+            {
+                'func1': ctypes.CFUNCTYPE(ctypes.c_int),
+                'func2': ctypes.CFUNCTYPE(None, ctypes.c_int),
+            }
+        ),
     ),
     ids=(
         'empty header',
@@ -321,6 +341,7 @@ enum thing {
         'basic union',
         'void typedef',
         'basic enum',
+        'functions with enums',
     )
 )
 def test_header(tmpdir,
