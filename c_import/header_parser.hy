@@ -50,7 +50,9 @@
   (setv ^TypeTable types (dict)
         ^SymbolTable symbols (dict)))
 
-(defn get-type-or-create-variant ^OptionalPointerWrapper [^CInterface scope ^(. clang cindex Type) clang-type]
+(defn get-type-or-create-variant ^OptionalPointerWrapper [^CInterface scope
+                                                          ^(. clang cindex Type) clang-type
+                                                          &optional [keep-enum False]]
   ;; TODO: Handle anonymous and opaque types
   ;; TODO: Handle consts
   (assert (. clang-type spelling))
@@ -83,14 +85,16 @@
                            any)
                   (setv type-id (get (.split type-id) 1)))
                 (setv existing-type (get (. scope types) type-id))
-                (if (issubclass existing-type (. enum IntEnum))
+                (if (and (not keep-enum) (issubclass existing-type (. enum IntEnum)))
                     (. ctypes c_int)
                     existing-type))]))
 
 (defn add-typedef [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assoc (. scope types)
          (. cursor spelling)
-         (get-type-or-create-variant scope (. cursor underlying_typedef_type))))
+         (get-type-or-create-variant scope
+                                     (. cursor underlying_typedef_type)
+                                     :keep-enum True)))
 
 (defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
   (setv struct-name (. cursor type spelling))
