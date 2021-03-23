@@ -85,7 +85,9 @@
                            any)
                   (setv type-id (get (.split type-id) 1)))
                 (setv existing-type (get (. scope types) type-id))
-                (if (and (not keep-enum) (issubclass existing-type (. enum IntEnum)))
+                (if (and existing-type
+                         (not keep-enum)
+                         (issubclass existing-type (. enum IntEnum)))
                     (. ctypes c_int)
                     existing-type))]))
 
