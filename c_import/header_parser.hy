@@ -78,10 +78,10 @@
 
         [True (do
                 (setv type-id (. clang-type spelling))
-                (when (->> ["enum" "struct" "union"]
+                (when (->> ["enum " "struct " "union "]
                            (map (fn [x] (.startswith type-id x)))
                            any)
-                  (setv type-id (. (.get_declaration clang-type) spelling)))
+                  (setv type-id (get (.split type-id) 1)))
                 (setv existing-type (get (. scope types) type-id))
                 (if (issubclass existing-type (. enum IntEnum))
                     (. ctypes c_int)
