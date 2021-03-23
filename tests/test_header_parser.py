@@ -330,6 +330,50 @@ void func2(enum thing argument);
                 'func2': ctypes.CFUNCTYPE(None, ctypes.c_int),
             }
         ),
+
+        # Typedef for anon stuff
+        (
+'''
+typedef struct {
+    int x;
+    double y;
+} my_struct_t;
+
+typedef union {
+    int x;
+    double y;
+} my_union_u;
+
+typedef enum {
+    X,
+    Y
+} my_enum_e;
+''',
+            {
+                'my_struct_t': type(
+                    'my_struct_t',
+                    (ctypes.Structure,),
+                    {
+                        '_fields_': [
+                            ('x', ctypes.c_int),
+                            ('y', ctypes.c_double)
+                        ],
+                    },
+                ),
+                'my_union_u': type(
+                    'my_union_u',
+                    (ctypes.Union,),
+                    {
+                        '_fields_': [
+                            ('x', ctypes.c_int),
+                            ('y', ctypes.c_double)
+                        ],
+                    },
+                ),
+                'my_enum_e': enum.IntEnum('my_enum_e', ['X', 'Y']),
+            },
+            {}
+        ),
     ),
     ids=(
         'empty header',
@@ -342,6 +386,7 @@ void func2(enum thing argument);
         'void typedef',
         'basic enum',
         'functions with enums',
+        'typedef of anonymous stuff',
     )
 )
 def test_header(tmpdir,
