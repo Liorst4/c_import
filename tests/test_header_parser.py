@@ -288,9 +288,11 @@ union x {
         (
 '''
 typedef void my_type;
+typedef my_type *my_type_pointer;
 ''',
             {
                 'my_type': None,
+                'my_type_pointer': ctypes.c_void_p,
             },
             {}
         ),
