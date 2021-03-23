@@ -93,23 +93,31 @@
          (get-type-or-create-variant scope (. cursor underlying_typedef_type))))
 
 (defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
-  (setv struct (type (. cursor spelling) (tuple [(. ctypes Structure)]) (dict)))
-  (assoc (. scope types) (. cursor spelling) struct)
+  (setv struct-name (. cursor type spelling))
+  (when (.startswith struct-name "struct ")
+    (setv struct-name (cut struct-name (len "struct "))))
+  (setv struct (type struct-name (tuple [(. ctypes Structure)]) (dict)))
+  (assoc (. scope types) struct-name struct)
   (setv (. struct _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant scope (. c type))]))
                                        ;; TODO Handle non fields things
                                        (filter (fn [x] (= (. x kind) (. clang cindex CursorKind FIELD_DECL)))
                                                (.get_children cursor))))))
 
 (defn add-union [^CInterface scope ^(. clang cindex Cursor) cursor]
-  (setv union (type (. cursor spelling) (tuple [(. ctypes Union)]) (dict)))
-  (assoc (. scope types) (. cursor spelling) union)
+  (setv union-name (. cursor type spelling))
+  (when (.startswith union-name "union ")
+    (setv union-name (cut union-name (len "union "))))
+  (setv union (type union-name (tuple [(. ctypes Union)]) (dict)))
+  (assoc (. scope types) union-name union)
   (setv (. union _fields_) (list (map (fn [c] (tuple [(. c spelling) (get-type-or-create-variant scope (. c type))]))
                                       ;; TODO Handle non fields things
                                       (filter (fn [x] (= (. x kind) (. clang cindex CursorKind FIELD_DECL)))
                                               (.get_children cursor))))))
 
 (defn add-enum [^CInterface scope ^(. clang cindex Cursor) cursor]
-  (setv enum-name (. cursor spelling))
+  (setv enum-name (. cursor type spelling))
+  (when (.startswith enum-name "enum ")
+    (setv enum-name (cut enum-name (len "enum "))))
   (assoc (. scope types)
          enum-name
          (.IntEnum enum
