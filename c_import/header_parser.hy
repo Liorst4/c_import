@@ -157,4 +157,6 @@
         cursor (. tu cursor))
   (.update (. scope types) (.copy INITIAL_TYPES))
   (handle-decleration scope cursor)
+  (assert (->> (in "" (.keys (. scope types)))
+               not))
   scope)
