@@ -376,6 +376,21 @@ typedef enum {
             },
             {}
         ),
+
+        # opaque type
+        (
+'''
+struct thing;
+typedef struct thing* thing_ptr;
+''',
+            {
+                'thing': type('thing', (ctypes.Structure,), {'_fields_': []}),
+                'thing_ptr': ctypes.POINTER(
+                    type('thing', (ctypes.Structure,), {'_fields_': []})
+                )
+            },
+            {},
+        ),
     ),
     ids=(
         'empty header',
@@ -389,6 +404,7 @@ typedef enum {
         'basic enum',
         'functions with enums',
         'typedef of anonymous stuff',
+        'opaque types',
     )
 )
 def test_header(tmpdir,
