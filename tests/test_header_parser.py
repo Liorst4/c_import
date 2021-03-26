@@ -23,6 +23,10 @@ def types_are_equivalent(a, b) -> bool:
         return types_are_equivalent(a, b)
 
     if issubclass(a, (ctypes.Structure, ctypes.Union)):
+
+        if len(a._fields_) != len(b._fields_):
+            return False
+
         for (f_a, f_b) in zip(a._fields_, b._fields_):
             f_a_name, f_a_type = f_a
             f_b_name, f_b_type = f_b
