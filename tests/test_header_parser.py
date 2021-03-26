@@ -528,6 +528,21 @@ union {
             symbols_with_anonymous_types_types,
             symbols_with_anonymous_types_symbols
         ),
+
+        # anonymous enum
+        (
+'''
+enum {
+    A,
+    B,
+    C
+};
+''',
+            {
+                '_anon1': enum.IntEnum('_anon1', ['A', 'B', 'C']),
+            },
+            {}
+        ),
     ),
     ids=(
         'empty header',
@@ -546,6 +561,7 @@ union {
         'struct with anonymous union members',
         'struct with anonymous struct member',
         'symbols with anonymous types',
+        'anonymous enum',
     )
 )
 def test_header(tmpdir,
