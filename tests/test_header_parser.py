@@ -419,12 +419,35 @@ typedef enum e* e_ptr;
 '''
 struct thing;
 typedef struct thing* thing_ptr;
+
+struct thing2;
+typedef struct thing2* thing2_ptr;
+struct thing2 {
+    int x;
+    int y;
+};
 ''',
             {
                 'thing': type('thing', (ctypes.Structure,), {'_fields_': []}),
                 'thing_ptr': ctypes.POINTER(
                     type('thing', (ctypes.Structure,), {'_fields_': []})
-                )
+                ),
+                'thing2': type(
+                    'thing2',
+                    (ctypes.Structure,),
+                    {'_fields_': [
+                        ('x', ctypes.c_int),
+                        ('y', ctypes.c_int),
+                    ]}
+                ),
+                'thing2_ptr': ctypes.POINTER(type(
+                    'thing2',
+                    (ctypes.Structure,),
+                    {'_fields_': [
+                        ('x', ctypes.c_int),
+                        ('y', ctypes.c_int),
+                    ]}
+                )),
             },
             {},
         ),
