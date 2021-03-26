@@ -20,6 +20,13 @@ def struct_are_equivalent(a: type, b: type) -> bool:
         return a == b
 
 
+# Example classes used in parametrize
+class struct_with_anon_union(ctypes.Structure):
+    class _anon1(ctypes.Union):
+        _fields_ = [('x', ctypes.c_int), ('y', ctypes.c_longlong)]
+    _anonymous_ = ('_anon1',)
+    _fields_=[('_anon1', _anon1), ('z', ctypes.c_double)]
+
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
         # empty header
@@ -452,6 +459,23 @@ struct thing2 {
             },
             {},
         ),
+
+        # struct with anonymous union members
+        (
+'''
+struct struct_with_anon_union {
+    union {
+        int x;
+        long long int y;
+    };
+    double z;
+};
+''',
+            {
+                'struct_with_anon_union': struct_with_anon_union,
+            },
+            {}
+        ),
     ),
     ids=(
         'empty header',
@@ -467,6 +491,7 @@ struct thing2 {
         'typedef of anonymous stuff',
         'pointer typedefs',
         'opaque types',
+        'struct with anonymous union members',
     )
 )
 def test_header(tmpdir,
