@@ -473,7 +473,7 @@ typedef union u* u_ptr;
 enum e {};
 typedef enum e* e_ptr;
 ''',
-            pointer_typedefs_types,
+            pointer_typedefs_types.copy(),
             {},
         ),
 
@@ -490,7 +490,7 @@ struct thing2 {
     int y;
 };
 ''',
-            opaque_types_types,
+            opaque_types_types.copy(),
             {},
         ),
 
@@ -541,8 +541,8 @@ union {
     float y;
 } my_global2;
 ''',
-            symbols_with_anonymous_types_types,
-            symbols_with_anonymous_types_symbols
+            symbols_with_anonymous_types_types.copy(),
+            symbols_with_anonymous_types_symbols.copy()
         ),
 
         # anonymous enum
