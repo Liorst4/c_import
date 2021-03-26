@@ -30,6 +30,24 @@ class struct_with_anon_struct_member(ctypes.Structure):
     class _anon1(ctypes.Union):
         _fields_ = [('x', ctypes.c_int), ('y', ctypes.c_longlong)]
     _fields_=[('a', _anon1), ('b', ctypes.c_double)]
+symbols_with_anonymous_types_types = {
+    '_anon1': type('_anon1', (ctypes.Structure,), {
+        '_fields_': [
+            ('x', ctypes.c_int),
+            ('y', ctypes.c_float),
+        ]
+    }),
+    '_anon2': type('_anon2', (ctypes.Union,), {
+        '_fields_': [
+            ('x', ctypes.c_int),
+            ('y', ctypes.c_float),
+        ]
+    }),
+}
+symbols_with_anonymous_types_symbols = {
+    'my_global1': symbols_with_anonymous_types_types['_anon1'],
+    'my_global2': symbols_with_anonymous_types_types['_anon2'],
+}
 
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
@@ -497,6 +515,23 @@ struct struct_with_anon_struct_member {
             },
             {}
         ),
+
+        # symbols with anonymous types
+        (
+'''
+struct {
+    int x;
+    float y;
+} my_global1;
+
+union {
+    int x;
+    float y;
+} my_global2;
+''',
+            symbols_with_anonymous_types_types,
+            symbols_with_anonymous_types_symbols
+        ),
     ),
     ids=(
         'empty header',
@@ -514,6 +549,7 @@ struct struct_with_anon_struct_member {
         'opaque types',
         'struct with anonymous union members',
         'struct with anonymous struct member',
+        'symbols with anonymous types',
     )
 )
 def test_header(tmpdir,
