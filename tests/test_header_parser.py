@@ -48,6 +48,23 @@ symbols_with_anonymous_types_symbols = {
     'my_global1': symbols_with_anonymous_types_types['_anon1'],
     'my_global2': symbols_with_anonymous_types_types['_anon2'],
 }
+opaque_types_types = {
+    'thing': type('thing', (ctypes.Structure,), {'_fields_': []}),
+    'thing2': type(
+        'thing2',
+        (ctypes.Structure,),
+        {'_fields_': [
+            ('x', ctypes.c_int),
+            ('y', ctypes.c_int),
+        ]}
+    ),
+}
+opaque_types_types['thing_ptr'] = ctypes.POINTER(
+    opaque_types_types['thing']
+)
+opaque_types_types['thing2_ptr'] = ctypes.POINTER(
+    opaque_types_types['thing2']
+)
 
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
@@ -457,28 +474,7 @@ struct thing2 {
     int y;
 };
 ''',
-            {
-                'thing': type('thing', (ctypes.Structure,), {'_fields_': []}),
-                'thing_ptr': ctypes.POINTER(
-                    type('thing', (ctypes.Structure,), {'_fields_': []})
-                ),
-                'thing2': type(
-                    'thing2',
-                    (ctypes.Structure,),
-                    {'_fields_': [
-                        ('x', ctypes.c_int),
-                        ('y', ctypes.c_int),
-                    ]}
-                ),
-                'thing2_ptr': ctypes.POINTER(type(
-                    'thing2',
-                    (ctypes.Structure,),
-                    {'_fields_': [
-                        ('x', ctypes.c_int),
-                        ('y', ctypes.c_int),
-                    ]}
-                )),
-            },
+            opaque_types_types,
             {},
         ),
 
