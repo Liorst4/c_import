@@ -377,6 +377,43 @@ typedef enum {
             {}
         ),
 
+        # pointer typedefs
+        (
+'''
+typedef int* int_ptr;
+typedef float* float_ptr;
+typedef void* void_ptr;
+
+struct s {};
+typedef struct s* s_ptr;
+
+union u {};
+typedef union u* u_ptr;
+
+enum e {};
+typedef enum e* e_ptr;
+''',
+            {
+                'int_ptr': ctypes.POINTER(ctypes.c_int),
+                'float_ptr': ctypes.POINTER(ctypes.c_float),
+                'void_ptr': ctypes.c_void_p,
+
+                's': type('s', (ctypes.Structure,), {'_fields_': []}),
+                's_ptr': ctypes.POINTER(
+                    type('s', (ctypes.Structure,), {'_fields_': []})
+                ),
+
+                'u': type('u', (ctypes.Union,), {'_fields_': []}),
+                'u_ptr': ctypes.POINTER(
+                    type('u', (ctypes.Union,), {'_fields_': []})
+                ),
+
+                'e': enum.IntEnum('e', []),
+                'e_ptr': ctypes.POINTER(ctypes.c_int)
+            },
+            {},
+        ),
+
         # opaque type
         (
 '''
@@ -404,6 +441,7 @@ typedef struct thing* thing_ptr;
         'basic enum',
         'functions with enums',
         'typedef of anonymous stuff',
+        'pointer typedefs',
         'opaque types',
     )
 )
