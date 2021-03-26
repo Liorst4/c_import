@@ -19,6 +19,7 @@ def struct_are_equivalent(a: type, b: type) -> bool:
     else:
         return a == b
 
+
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
         # empty header
@@ -492,3 +493,19 @@ def test_header(tmpdir,
     # Test types
     assert symbols == expected_symbols
 
+def test_struct_with_self_reference(tmpdir):
+    header_content = '''
+struct node;
+struct node {
+    struct node* next;
+};
+'''
+    header = tmpdir / 'header.h'
+    header.write(header_content)
+    types, _ = c_import.header_parser.parse_header(header)
+    assert 'node' in types
+    assert issubclass(types['node'], ctypes.Structure)
+    assert types['node']._fields_[0][0] == 'next'
+    assert issubclass(types['node']._fields_[0][1], ctypes._Pointer)
+    assert types['node']._fields_[0][1]._type_ == types['node']
+    assert types['node']._fields_[0][1]._type_._fields_[0][0] == 'next'
