@@ -1,23 +1,37 @@
 import ctypes
 import c_import
 import enum
+import typing
 
 import pytest
 
 # TODO: Test function pointer typedef
 # TODO: Test multiple structs
 
-def struct_are_equivalent(a: type, b: type) -> bool:
+def types_are_equivalent(a, b) -> bool:
+
+    if a is None:
+        return a == b
+
+    if issubclass(a, enum.Enum):
+        return a.__members__ == b.__members__
+
+    if issubclass(a, ctypes._Pointer):
+        while issubclass(a, ctypes._Pointer):
+            a = a._type_
+            b = b._type_
+        return types_are_equivalent(a, b)
+
     if issubclass(a, (ctypes.Structure, ctypes.Union)):
         for (f_a, f_b) in zip(a._fields_, b._fields_):
             f_a_name, f_a_type = f_a
             f_b_name, f_b_type = f_b
             if f_a_name != f_b_name or \
-               not struct_are_equivalent(f_a_type, f_b_type):
+               not types_are_equivalent(f_a_type, f_b_type):
                 return False
         return True
-    else:
-        return a == b
+
+    return a == b
 
 
 # Example classes used in parametrize
@@ -576,12 +590,7 @@ def test_header(tmpdir,
     expected_types.update(c_import.header_parser.INITIAL_TYPES.copy())
     assert set(types.keys()) == set(expected_types.keys())
     for (key, value) in types.items():
-        if value and issubclass(value, (ctypes.Structure, ctypes.Union)):
-            assert struct_are_equivalent(value, expected_types[key])
-        elif value and issubclass(value, enum.Enum):
-            assert value.__members__ == expected_types[key].__members__
-        else:
-            assert value == expected_types[key]
+        assert types_are_equivalent(value, expected_types[key])
 
     # Test symbols
     assert symbols == expected_symbols
