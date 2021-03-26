@@ -572,7 +572,7 @@ def test_header(tmpdir,
     header.write(header_content)
     types, symbols = c_import.header_parser.parse_header(header)
 
-    # Test symbols
+    # Test types
     expected_types.update(c_import.header_parser.INITIAL_TYPES.copy())
     assert set(types.keys()) == set(expected_types.keys())
     for (key, value) in types.items():
@@ -583,7 +583,7 @@ def test_header(tmpdir,
         else:
             assert value == expected_types[key]
 
-    # Test types
+    # Test symbols
     assert symbols == expected_symbols
 
 def test_struct_with_self_reference(tmpdir):
