@@ -5,7 +5,6 @@ import typing
 
 import pytest
 
-# TODO: Test function pointer typedef
 # TODO: Test multiple structs
 
 def types_are_equivalent(a, b) -> bool:
@@ -559,6 +558,22 @@ enum {
             },
             {}
         ),
+
+        # typedef of function pointer
+        (
+'''
+typedef float (*callback_t)(int, float, void*);
+''',
+            {
+                'callback_t': ctypes.POINTER(ctypes.CFUNCTYPE(
+                    ctypes.c_float,
+                    ctypes.c_int,
+                    ctypes.c_float,
+                    ctypes.c_void_p
+                )),
+            },
+            {}
+        ),
     ),
     ids=(
         'empty header',
@@ -578,6 +593,7 @@ enum {
         'struct with anonymous struct member',
         'symbols with anonymous types',
         'anonymous enum',
+        'typedef of function pointer',
     )
 )
 def test_header(tmpdir,
