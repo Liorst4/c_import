@@ -65,6 +65,21 @@ opaque_types_types['thing_ptr'] = ctypes.POINTER(
 opaque_types_types['thing2_ptr'] = ctypes.POINTER(
     opaque_types_types['thing2']
 )
+pointer_typedefs_types = {
+    'int_ptr': ctypes.POINTER(ctypes.c_int),
+    'float_ptr': ctypes.POINTER(ctypes.c_float),
+    'void_ptr': ctypes.c_void_p,
+    's': type('s', (ctypes.Structure,), {'_fields_': []}),
+    'u': type('u', (ctypes.Union,), {'_fields_': []}),
+    'e': enum.IntEnum('e', []),
+    'e_ptr': ctypes.POINTER(ctypes.c_int)
+}
+pointer_typedefs_types['s_ptr'] = ctypes.POINTER(
+    pointer_typedefs_types['s']
+)
+pointer_typedefs_types['u_ptr'] = ctypes.POINTER(
+    pointer_typedefs_types['u']
+)
 
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
@@ -440,24 +455,7 @@ typedef union u* u_ptr;
 enum e {};
 typedef enum e* e_ptr;
 ''',
-            {
-                'int_ptr': ctypes.POINTER(ctypes.c_int),
-                'float_ptr': ctypes.POINTER(ctypes.c_float),
-                'void_ptr': ctypes.c_void_p,
-
-                's': type('s', (ctypes.Structure,), {'_fields_': []}),
-                's_ptr': ctypes.POINTER(
-                    type('s', (ctypes.Structure,), {'_fields_': []})
-                ),
-
-                'u': type('u', (ctypes.Union,), {'_fields_': []}),
-                'u_ptr': ctypes.POINTER(
-                    type('u', (ctypes.Union,), {'_fields_': []})
-                ),
-
-                'e': enum.IntEnum('e', []),
-                'e_ptr': ctypes.POINTER(ctypes.c_int)
-            },
+            pointer_typedefs_types,
             {},
         ),
 
