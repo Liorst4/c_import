@@ -27,8 +27,20 @@ def types_are_equivalent(a, b) -> bool:
             return False
 
         for (f_a, f_b) in zip(a._fields_, b._fields_):
-            f_a_name, f_a_type = f_a
-            f_b_name, f_b_type = f_b
+
+            if len(f_a) != len(f_b):
+                return False
+
+            f_a_name = f_a[0]
+            f_a_type = f_a[1]
+
+            f_b_name = f_b[0]
+            f_b_type = f_b[1]
+
+            if len(f_a) == 3:
+                if f_a[2] != f_b[2]:
+                    return False
+
             if f_a_name != f_b_name or \
                not types_are_equivalent(f_a_type, f_b_type):
                 return False
@@ -574,6 +586,27 @@ typedef float (*callback_t)(int, float, void*);
             },
             {}
         ),
+
+        # struct with bitfields
+        (
+'''
+struct s {
+    int a : 16;
+    int b : 1;
+    short c : 5;
+};
+''',
+            {
+                's': type('s', (ctypes.Structure,), {
+                    '_fields_': [
+                        ('a', ctypes.c_int, 16),
+                        ('b', ctypes.c_int, 1),
+                        ('c', ctypes.c_short, 5),
+                    ],
+                })
+            },
+            {}
+        ),
     ),
     ids=(
         'empty header',
@@ -594,6 +627,7 @@ typedef float (*callback_t)(int, float, void*);
         'symbols with anonymous types',
         'anonymous enum',
         'typedef of function pointer',
+        'struct with bitfields',
     )
 )
 def test_header(tmpdir,
