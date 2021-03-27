@@ -15,6 +15,9 @@
       SymbolTable (of Dict str OptionalPointerWrapper)
       ^TypeTable INITIAL_TYPES (dict))
 
+(defclass __unknown_type [(. ctypes c_int)]
+  (setv _fields_ []))
+
 (assoc INITIAL_TYPES
        "char" (. ctypes c_char)
        "signed char" (. ctypes c_char)
@@ -177,7 +180,8 @@
                 (handle-decleration scope c))]))
 
 (defn parse-header ^CInterface [^(. pathlib Path) header]
-  (setv scope (CInterface (defaultdict (fn [] (. ctypes c_int)) (dict)) (dict))
+  (setv scope (CInterface (defaultdict (fn [] __unknown_type) (dict))
+                          (dict))
         index ((. clang cindex Index create))
         tu ((. index parse) header)
         cursor (. tu cursor))
