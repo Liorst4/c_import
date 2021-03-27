@@ -204,9 +204,13 @@ pointer_typedefs_types['u_ptr'] = ctypes.POINTER(
     long foo11(int, double, float, short);
 
     int (*foo12) (long);
+
+    char* foo13(void);
+
+    const char* foo14(void);
+    char const* foo15(void);
 ''',
             {
-                'const int': ctypes.c_int,
             },
             {
                 'global1': ctypes.c_char,
@@ -294,6 +298,9 @@ pointer_typedefs_types['u_ptr'] = ctypes.POINTER(
                                           ctypes.c_float,
                                           ctypes.c_short),
                 'foo12': ctypes.POINTER(ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_long)),
+                'foo13': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
+                'foo14': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
+                'foo15': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
             }
         ),
 

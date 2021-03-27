@@ -54,7 +54,6 @@
                                                           ^(. clang cindex Type) clang-type
                                                           &optional [keep-enum False]]
   ;; TODO: Handle anonymous and opaque types
-  ;; TODO: Handle consts
   (assert (. clang-type spelling))
   ;; TODO: Use macro for kind switch?
   (cond [(= (. clang-type kind) (. clang cindex TypeKind POINTER))
@@ -80,6 +79,14 @@
 
         [True (do
                 (setv type-id (. clang-type spelling))
+
+                (when (.is_const_qualified clang-type)
+                  (setv type-id (do
+                                  (setv type-id-words (.split type-id))
+                                  (while (in "const" type-id-words)
+                                    (.remove type-id-words "const"))
+                                  (.join " " type-id-words))))
+
                 (when (->> ["enum " "struct " "union "]
                            (map (fn [x] (.startswith type-id x)))
                            any)
