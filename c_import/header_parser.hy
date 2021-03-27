@@ -50,6 +50,12 @@
   (setv ^TypeTable types (dict)
         ^SymbolTable symbols (dict)))
 
+(defn remove-qualifier ^str [^str type-id ^str q]
+  (setv type-id-words (.split type-id))
+  (while (in q type-id-words)
+    (.remove type-id-words q))
+  (.join " " type-id-words))
+
 (defn get-type-or-create-variant ^OptionalPointerWrapper [^CInterface scope
                                                           ^(. clang cindex Type) clang-type
                                                           &optional [keep-enum False]]
@@ -81,11 +87,11 @@
                 (setv type-id (. clang-type spelling))
 
                 (when (.is_const_qualified clang-type)
-                  (setv type-id (do
-                                  (setv type-id-words (.split type-id))
-                                  (while (in "const" type-id-words)
-                                    (.remove type-id-words "const"))
-                                  (.join " " type-id-words))))
+                  (setv type-id (remove-qualifier type-id "const")))
+
+                (when (.is_volatile_qualified clang-type)
+                  (setv type-id (remove-qualifier type-id
+                                                  "volatile")))
 
                 (when (->> ["enum " "struct " "union "]
                            (map (fn [x] (.startswith type-id x)))

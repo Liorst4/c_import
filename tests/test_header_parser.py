@@ -184,6 +184,9 @@ pointer_typedefs_types['u_ptr'] = ctypes.POINTER(
 
     char* global42;
 
+    volatile double global43;
+    double volatile global44;
+
     foo1();
     int foo2();
     int foo3(void);
@@ -271,6 +274,9 @@ pointer_typedefs_types['u_ptr'] = ctypes.POINTER(
                 'global41': ctypes.ARRAY(ctypes.ARRAY(ctypes.c_int, 34), 2),
 
                 'global42': ctypes.POINTER(ctypes.c_char),
+
+                'global43': ctypes.c_double,
+                'global44': ctypes.c_double,
 
                 'foo1': ctypes.CFUNCTYPE(ctypes.c_int),
                 'foo2': ctypes.CFUNCTYPE(ctypes.c_int),
