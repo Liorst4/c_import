@@ -26,6 +26,10 @@ def types_are_equivalent(a, b) -> bool:
         if len(a._fields_) != len(b._fields_):
             return False
 
+        if any((hasattr(o, "_pack_") for o in (a, b))):
+            if a._pack_ != b._pack_:
+                return False
+
         for (f_a, f_b) in zip(a._fields_, b._fields_):
 
             if len(f_a) != len(f_b):
@@ -607,6 +611,30 @@ struct s {
             },
             {}
         ),
+
+        # packed structs
+        (
+'''
+struct s {
+    int a;
+    short b;
+    char c;
+    long long d;
+} __attribute__((packed));
+''',
+            {
+                's': type('s', (ctypes.Structure,), {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('a', ctypes.c_int),
+                        ('b', ctypes.c_short),
+                        ('c', ctypes.c_char),
+                        ('d', ctypes.c_longlong),
+                    ],
+                }),
+            },
+            {}
+        )
     ),
     ids=(
         'empty header',
@@ -628,6 +656,7 @@ struct s {
         'anonymous enum',
         'typedef of function pointer',
         'struct with bitfields',
+        'packed structs',
     )
 )
 def test_header(tmpdir,
