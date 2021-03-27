@@ -83,6 +83,16 @@
 
         [(= (. clang-type kind) (. clang cindex TypeKind VOID)) None]
 
+        [(= (. clang-type kind) (. clang
+                                   cindex
+                                   TypeKind
+                                   INCOMPLETEARRAY)) (->> (. clang-type element_type)
+                                                          (get-type-or-create-variant scope)
+                                                          (.POINTER ctypes))]
+
+        ;; TODO: TYPEDEF
+        ;; TODO: RECORD
+
         [True (do
                 (setv type-id (. clang-type spelling))
 

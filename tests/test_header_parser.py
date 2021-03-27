@@ -212,6 +212,8 @@ pointer_typedefs_types['u_ptr'] = ctypes.POINTER(
 
     const char* foo14(void);
     char const* foo15(void);
+
+    void foo16(double arg[]);
 ''',
             {
             },
@@ -307,6 +309,7 @@ pointer_typedefs_types['u_ptr'] = ctypes.POINTER(
                 'foo13': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
                 'foo14': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
                 'foo15': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
+                'foo16': ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_double)),
             }
         ),
 
