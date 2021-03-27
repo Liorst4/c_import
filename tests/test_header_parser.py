@@ -5,7 +5,6 @@ import typing
 
 import pytest
 
-# TODO: Test multiple structs
 
 def types_are_equivalent(a, b) -> bool:
 
