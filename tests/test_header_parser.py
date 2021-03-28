@@ -20,6 +20,17 @@ def types_are_equivalent(a, b) -> bool:
             b = b._type_
         return types_are_equivalent(a, b)
 
+    if any((issubclass(o, ctypes._CFuncPtr) for o in (a, b))):
+        if not types_are_equivalent(a._restype_, b._restype_):
+            return False
+        if len(a._argtypes_) != len(b._argtypes_):
+            return False
+        for (a_arg, b_arg) in zip(a._argtypes_, b._argtypes_):
+            if not types_are_equivalent(a_arg, b_arg):
+                return False
+        return True
+
+
     if issubclass(a, (ctypes.Structure, ctypes.Union)):
 
         if len(a._fields_) != len(b._fields_):
