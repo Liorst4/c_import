@@ -200,6 +200,27 @@ unions_and_symbols_symbols = {
         unions_and_symbols_u_ptr,
     ),
 }
+enums_and_symbols_types = {
+    'e': enum.IntEnum('e', ['A', 'B', 'C']),
+}
+enums_and_symbols_symbols = {
+    'global1': ctypes.c_int,
+    'global2': ctypes.POINTER(ctypes.c_int),
+
+    'foo1': ctypes.CFUNCTYPE(None, ctypes.c_int),
+    'foo2': ctypes.CFUNCTYPE(ctypes.c_int),
+    'foo3': ctypes.CFUNCTYPE(
+        ctypes.c_int,
+        ctypes.c_int,
+    ),
+
+    'foo4': ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_int)),
+    'foo5': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_int)),
+    'foo6': ctypes.CFUNCTYPE(
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+    ),
+}
 
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
@@ -791,6 +812,30 @@ union u* foo6(union u* x);
             unions_and_symbols_types,
             unions_and_symbols_symbols,
         ),
+
+        # Enums and symbols
+        (
+'''
+enum e {
+    A,
+    B,
+    C,
+};
+
+enum e global1;
+enum e* global2;
+
+void foo1(enum e x);
+enum e foo2(void);
+enum e foo3(enum e x);
+
+void foo4(enum e* x);
+enum e* foo5(void);
+enum e* foo6(enum e* x);
+''',
+            enums_and_symbols_types,
+            enums_and_symbols_symbols,
+        ),
     ),
     ids=(
         'empty header',
@@ -815,6 +860,7 @@ union u* foo6(union u* x);
         'packed structs',
         'structs and symbols',
         'unions and symbols',
+        'enums and symbols',
     )
 )
 def test_header(tmpdir,
