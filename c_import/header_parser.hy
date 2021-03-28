@@ -12,42 +12,10 @@
       TypeTable (of Dict str (of Union
                                  OptionalPointerWrapper
                                  (. enum IntEnum)))
-      SymbolTable (of Dict str OptionalPointerWrapper)
-      ^TypeTable INITIAL_TYPES (dict))
+      SymbolTable (of Dict str OptionalPointerWrapper))
 
 (defclass __unknown_type [(. ctypes c_int)]
   (setv _fields_ []))
-
-(assoc INITIAL_TYPES
-       "char" (. ctypes c_char)
-       "signed char" (. ctypes c_char)
-       "unsigned char" (. ctypes c_ubyte)
-       "short" (. ctypes c_short)
-       "short int" (. ctypes c_short)
-       "signed short" (. ctypes c_short)
-       "signed short int" (. ctypes c_short)
-       "unsigned short" (. ctypes c_ushort)
-       "unsigned short int" (. ctypes c_ushort)
-       "int" (. ctypes c_int)
-       "signed" (. ctypes c_int)
-       "signed int" (. ctypes c_int)
-       "unsigned" (. ctypes c_uint)
-       "unsigned int" (. ctypes c_uint)
-       "long" (. ctypes c_long)
-       "long int" (. ctypes c_long)
-       "signed long" (. ctypes c_long)
-       "signed long int" (. ctypes c_long)
-       "unsigned long" (. ctypes c_ulong)
-       "unsigned long int" (. ctypes c_ulong)
-       "long long" (. ctypes c_longlong)
-       "long long int" (. ctypes c_longlong)
-       "signed long long" (. ctypes c_longlong)
-       "signed long long int" (. ctypes c_longlong)
-       "unsigned long long" (. ctypes c_ulonglong)
-       "unsigned long long int" (. ctypes c_ulonglong)
-       "float" (. ctypes c_float)
-       "double" (. ctypes c_double)
-       "long double" (. ctypes c_longdouble))
 
 (defclass CInterface [NamedTuple]
   (setv ^TypeTable types (dict)
@@ -63,6 +31,46 @@
          (->> (.get_pointee clang-type)
               (get-type-or-create-variant scope)
               (.POINTER ctypes))]
+        [(= (. clang-type kind) (. clang cindex TypeKind BOOL))
+         (. ctypes c_bool)]
+        [(= (. clang-type kind) (. clang cindex TypeKind CHAR_U))
+         (. ctypes c_ubyte)]
+        [(= (. clang-type kind) (. clang cindex TypeKind UCHAR))
+         (. ctypes c_ubyte)]
+        ;; TODO: CHAR16
+        ;; TODO: CHAR32
+        [(= (. clang-type kind) (. clang cindex TypeKind USHORT))
+         (. ctypes c_ushort)]
+        [(= (. clang-type kind) (. clang cindex TypeKind UINT))
+         (. ctypes c_uint)]
+        [(= (. clang-type kind) (. clang cindex TypeKind ULONG))
+         (. ctypes c_ulong)]
+        [(= (. clang-type kind) (. clang cindex TypeKind ULONGLONG))
+         (. ctypes c_ulonglong)]
+        ;; TODO: UINT128
+        [(= (. clang-type kind) (. clang cindex TypeKind CHAR_S))
+         (. ctypes c_char)]
+        [(= (. clang-type kind) (. clang cindex TypeKind SCHAR))
+         (. ctypes c_char)]
+        [(= (. clang-type kind) (. clang cindex TypeKind WCHAR))
+         (. ctypes c_wchar)]
+        [(= (. clang-type kind) (. clang cindex TypeKind SHORT))
+         (. ctypes c_short)]
+        [(= (. clang-type kind) (. clang cindex TypeKind INT))
+         (. ctypes c_int)]
+        [(= (. clang-type kind) (. clang cindex TypeKind LONG))
+         (. ctypes c_long)]
+        [(= (. clang-type kind) (. clang cindex TypeKind LONGLONG))
+         (. ctypes c_longlong)]
+        ;; TODO: INT128
+        [(= (. clang-type kind) (. clang cindex TypeKind FLOAT))
+         (. ctypes c_float)]
+        [(= (. clang-type kind) (. clang cindex TypeKind DOUBLE))
+         (. ctypes c_double)]
+        [(= (. clang-type kind) (. clang cindex TypeKind LONGDOUBLE))
+         (. ctypes c_longdouble)]
+        ;; TODO: FLOAT128
+        ;; TODO: COMPLEX
 
         [(= (. clang-type kind) (. clang cindex TypeKind CONSTANTARRAY))
          ((. ctypes ARRAY) (get-type-or-create-variant scope (. clang-type element_type)) (. clang-type element_count))]
@@ -185,7 +193,6 @@
         index ((. clang cindex Index create))
         tu ((. index parse) header)
         cursor (. tu cursor))
-  (.update (. scope types) (.copy INITIAL_TYPES))
   (handle-decleration scope cursor)
   (assert (->> (in "" (.keys (. scope types)))
                not))

@@ -5,6 +5,9 @@ import typing
 
 import pytest
 
+# TODO: restrict qualifier
+# TODO: Compiler builtins
+
 
 def types_are_equivalent(a, b) -> bool:
 
@@ -874,7 +877,6 @@ def test_header(tmpdir,
     types, symbols = c_import.header_parser.parse_header(header)
 
     # Test types
-    expected_types.update(c_import.header_parser.INITIAL_TYPES.copy())
     assert set(types.keys()) == set(expected_types.keys())
     for (key, value) in types.items():
         assert types_are_equivalent(value, expected_types[key])
