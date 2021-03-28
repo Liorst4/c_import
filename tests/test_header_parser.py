@@ -781,7 +781,9 @@ def test_header(tmpdir,
         assert types_are_equivalent(value, expected_types[key])
 
     # Test symbols
-    assert symbols == expected_symbols
+    assert set(symbols.keys()) == set(expected_symbols.keys())
+    for (key, value) in symbols.items():
+        assert types_are_equivalent(value, expected_symbols[key])
 
 def test_struct_with_self_reference(tmpdir):
     header_content = '''
