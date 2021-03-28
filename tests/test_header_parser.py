@@ -171,6 +171,35 @@ structs_and_symbols_symbols = {
         structs_and_symbols_opaque_thing_ptr
     ),
 }
+unions_and_symbols_types = {
+    'u': type('u', (ctypes.Union,), {
+        '_fields_': [
+            ('a', ctypes.c_float),
+            ('b', ctypes.c_double),
+        ],
+    }),
+}
+unions_and_symbols_u_ptr = ctypes.POINTER(
+    unions_and_symbols_types['u']
+)
+unions_and_symbols_symbols = {
+    'global1': unions_and_symbols_types['u'],
+    'global2': unions_and_symbols_u_ptr,
+
+    'foo1': ctypes.CFUNCTYPE(None, unions_and_symbols_types['u']),
+    'foo2': ctypes.CFUNCTYPE(unions_and_symbols_types['u']),
+    'foo3': ctypes.CFUNCTYPE(
+        unions_and_symbols_types['u'],
+        unions_and_symbols_types['u']
+    ),
+
+    'foo4': ctypes.CFUNCTYPE(None, unions_and_symbols_u_ptr),
+    'foo5': ctypes.CFUNCTYPE(unions_and_symbols_u_ptr),
+    'foo6': ctypes.CFUNCTYPE(
+        unions_and_symbols_u_ptr,
+        unions_and_symbols_u_ptr,
+    ),
+}
 
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
@@ -738,7 +767,30 @@ struct opaque_thing* foo9(struct opaque_thing* x);
 ''',
             structs_and_symbols_types,
             structs_and_symbols_symbols
-        )
+        ),
+
+        # Union and symbols
+        (
+'''
+union u {
+    float a;
+    double b;
+};
+
+union u global1;
+union u* global2;
+
+void foo1(union u x);
+union u foo2(void);
+union u foo3(union u x);
+
+void foo4(union u* x);
+union u* foo5(void);
+union u* foo6(union u* x);
+''',
+            unions_and_symbols_types,
+            unions_and_symbols_symbols,
+        ),
     ),
     ids=(
         'empty header',
@@ -762,6 +814,7 @@ struct opaque_thing* foo9(struct opaque_thing* x);
         'struct with bitfields',
         'packed structs',
         'structs and symbols',
+        'unions and symbols',
     )
 )
 def test_header(tmpdir,
