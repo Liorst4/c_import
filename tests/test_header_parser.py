@@ -112,6 +112,54 @@ pointer_typedefs_types['s_ptr'] = ctypes.POINTER(
 pointer_typedefs_types['u_ptr'] = ctypes.POINTER(
     pointer_typedefs_types['u']
 )
+structs_and_symbols_types = {
+    's': type('s', (ctypes.Structure,), {
+        '_fields_': [
+            ('a', ctypes.c_float),
+            ('b', ctypes.c_double),
+        ],
+    }),
+    'opaque_thing': type('opaque_thing', (ctypes.Structure,), {
+        '_fields_': [],
+    }),
+}
+structs_and_symbols_s_ptr = ctypes.POINTER(
+    structs_and_symbols_types['s']
+)
+structs_and_symbols_opaque_thing_ptr = ctypes.POINTER(
+    structs_and_symbols_types['opaque_thing'],
+)
+structs_and_symbols_symbols = {
+    'global1': structs_and_symbols_types['s'],
+    'global2': structs_and_symbols_s_ptr,
+    'global3': structs_and_symbols_opaque_thing_ptr,
+    'foo1': ctypes.CFUNCTYPE(None, structs_and_symbols_types['s']),
+    'foo2': ctypes.CFUNCTYPE(structs_and_symbols_types['s']),
+    'foo3': ctypes.CFUNCTYPE(
+        structs_and_symbols_types['s'],
+        structs_and_symbols_types['s']
+    ),
+    'foo4': ctypes.CFUNCTYPE(
+        None,
+        structs_and_symbols_s_ptr,
+    ),
+    'foo5': ctypes.CFUNCTYPE(structs_and_symbols_s_ptr),
+    'foo6': ctypes.CFUNCTYPE(
+        structs_and_symbols_s_ptr,
+        structs_and_symbols_s_ptr,
+    ),
+    'foo7': ctypes.CFUNCTYPE(
+        None,
+        structs_and_symbols_opaque_thing_ptr
+    ),
+    'foo8': ctypes.CFUNCTYPE(
+        structs_and_symbols_opaque_thing_ptr
+    ),
+    'foo9': ctypes.CFUNCTYPE(
+        structs_and_symbols_opaque_thing_ptr,
+        structs_and_symbols_opaque_thing_ptr
+    ),
+}
 
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
@@ -649,6 +697,36 @@ struct s {
                 }),
             },
             {}
+        ),
+
+        # Structs and symbols
+        (
+'''
+struct s {
+    float a;
+    double b;
+};
+
+struct opaque_thing;
+
+struct s global1;
+struct s *global2;
+struct opaque_thing *global3;
+
+void foo1(struct s x);
+struct s foo2(void);
+struct s foo3(struct s x);
+
+void foo4(struct s* x);
+struct s* foo5(void);
+struct s* foo6(struct s* x);
+
+void foo7(struct opaque_thing* x);
+struct opaque_thing* foo8(void);
+struct opaque_thing* foo9(struct opaque_thing* x);
+''',
+            structs_and_symbols_types,
+            structs_and_symbols_symbols
         )
     ),
     ids=(
@@ -672,6 +750,7 @@ struct s {
         'typedef of function pointer',
         'struct with bitfields',
         'packed structs',
+        'structs and symbols',
     )
 )
 def test_header(tmpdir,
