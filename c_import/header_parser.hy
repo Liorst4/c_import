@@ -124,20 +124,22 @@
 (defn create-fields [^CInterface scope
                      ^(. clang cindex Cursor) cursor
                      ^type cls]
-  (setv (. cls _fields_) (->> (.get_children cursor)
+  (setv tmp-fields (->> (.get_children cursor)
 
-                              ;; TODO Handle non fields things
-                              (filter (fn [x] (= (. x kind)
-                                                 (. clang
-                                                    cindex
-                                                    CursorKind
-                                                    FIELD_DECL))))
+                        ;; TODO Handle non fields things
+                        (filter (fn [x] (= (. x kind)
+                                           (. clang
+                                              cindex
+                                              CursorKind
+                                              FIELD_DECL))))
 
-                              (map (fn [c] (tuple [(. c spelling)
-                                                   (get-type-or-create-variant scope
-                                                                               (. c type))])))
+                        (map (fn [c] (tuple [(. c spelling)
+                                             (get-type-or-create-variant scope
+                                                                         (. c type))])))
 
-                              (list))))
+                        (list)))
+  (when tmp-fields
+    (setv (. cls _fields_) tmp-fields)))
 
 (defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
   (setv struct-name (. cursor type spelling))

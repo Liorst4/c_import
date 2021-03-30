@@ -36,6 +36,9 @@ def types_are_equivalent(a, b) -> bool:
 
     if issubclass(a, (ctypes.Structure, ctypes.Union)):
 
+        if not hasattr(a, "_fields_") and not hasattr(b, "_fields_"):
+            return True
+
         if len(a._fields_) != len(b._fields_):
             return False
 
@@ -95,7 +98,7 @@ symbols_with_anonymous_types_symbols = {
     'my_global2': symbols_with_anonymous_types_types['_anon2'],
 }
 opaque_types_types = {
-    'thing': type('thing', (ctypes.Structure,), {'_fields_': []}),
+    'thing': type('thing', (ctypes.Structure,), {}),
     'thing2': type(
         'thing2',
         (ctypes.Structure,),
@@ -115,8 +118,8 @@ pointer_typedefs_types = {
     'int_ptr': ctypes.POINTER(ctypes.c_int),
     'float_ptr': ctypes.POINTER(ctypes.c_float),
     'void_ptr': ctypes.c_void_p,
-    's': type('s', (ctypes.Structure,), {'_fields_': []}),
-    'u': type('u', (ctypes.Union,), {'_fields_': []}),
+    's': type('s', (ctypes.Structure,), {}),
+    'u': type('u', (ctypes.Union,), {}),
     'e': enum.IntEnum('e', []),
     'e_ptr': ctypes.POINTER(ctypes.c_int)
 }
@@ -133,9 +136,7 @@ structs_and_symbols_types = {
             ('b', ctypes.c_double),
         ],
     }),
-    'opaque_thing': type('opaque_thing', (ctypes.Structure,), {
-        '_fields_': [],
-    }),
+    'opaque_thing': type('opaque_thing', (ctypes.Structure,), {}),
 }
 structs_and_symbols_s_ptr = ctypes.POINTER(
     structs_and_symbols_types['s']
@@ -446,9 +447,7 @@ thing my_thing;
                 'thing': type(
                     "thing",
                     (ctypes.Structure,),
-                    {
-                        '_fields_': [],
-                    }
+                    {}
                 ),
             },
             {},
@@ -478,7 +477,7 @@ struct thing {
         (
             "union x {};",
             {
-                'x': type('x', (ctypes.Union,), {'_fields_': []})
+                'x': type('x', (ctypes.Union,), {})
             },
             {}
         ),
