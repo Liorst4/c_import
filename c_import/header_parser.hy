@@ -145,7 +145,11 @@
   (setv struct-name (. cursor type spelling))
   (when (.startswith struct-name "struct ")
     (setv struct-name (cut struct-name (len "struct "))))
-  (setv struct (type struct-name (tuple [(. ctypes Structure)]) (dict)))
+  (setv struct (if (in struct-name (. scope types))
+                   (get (. scope types) struct-name)
+                   (type struct-name
+                         (tuple [(. ctypes Structure)])
+                         (dict))))
   (assoc (. scope types) struct-name struct)
   (create-fields scope cursor struct))
 
@@ -153,7 +157,11 @@
   (setv union-name (. cursor type spelling))
   (when (.startswith union-name "union ")
     (setv union-name (cut union-name (len "union "))))
-  (setv union (type union-name (tuple [(. ctypes Union)]) (dict)))
+  (setv union (if (in union-name (. scope types))
+                   (get (. scope types) union-name)
+                   (type union-name
+                         (tuple [(. ctypes Union)])
+                         (dict))))
   (assoc (. scope types) union-name union)
   (create-fields scope cursor union))
 
