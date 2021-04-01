@@ -7,7 +7,6 @@ import pytest
 
 # TODO: Opaque enum
 # TODO: Opaque union
-# TODO: restrict qualifier
 # TODO: Compiler builtins
 
 
@@ -306,6 +305,8 @@ enums_and_symbols_symbols = {
     volatile double global43;
     double volatile global44;
 
+    double *restrict global45;
+
     foo1();
     int foo2();
     int foo3(void);
@@ -398,6 +399,8 @@ enums_and_symbols_symbols = {
 
                 'global43': ctypes.c_double,
                 'global44': ctypes.c_double,
+
+                'global45': ctypes.POINTER(ctypes.c_double),
 
                 'foo1': ctypes.CFUNCTYPE(ctypes.c_int),
                 'foo2': ctypes.CFUNCTYPE(ctypes.c_int),

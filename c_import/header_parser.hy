@@ -105,7 +105,8 @@
                                                                "volatile"
                                                                "enum"
                                                                "struct"
-                                                               "union"]))))
+                                                               "union"
+                                                               "restrict"]))))
                                    (.join " "))
                       existing-type (get (. scope types) type-id))
                 (if (and existing-type
