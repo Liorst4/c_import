@@ -5,7 +5,6 @@ import typing
 
 import pytest
 
-# TODO: Opaque enum
 # TODO: Opaque union
 # TODO: Compiler builtins
 
@@ -847,6 +846,24 @@ enum e* foo6(enum e* x);
             enums_and_symbols_types,
             enums_and_symbols_symbols,
         ),
+
+        # Opaque enum
+        (
+'''
+enum e;
+enum e2;
+enum e2 {
+    A,
+    B,
+    C,
+};
+''',
+            {
+                'e': enum.IntEnum('e', []),
+                'e2': enum.IntEnum('e2', ['A', 'B', 'C']),
+            },
+            {}
+        )
     ),
     ids=(
         'empty header',
@@ -872,6 +889,7 @@ enum e* foo6(enum e* x);
         'structs and symbols',
         'unions and symbols',
         'enums and symbols',
+        'opaque enum',
     )
 )
 def test_header(tmpdir,
