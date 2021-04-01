@@ -5,7 +5,6 @@ import typing
 
 import pytest
 
-# TODO: Opaque union
 # TODO: Compiler builtins
 
 
@@ -229,6 +228,16 @@ enums_and_symbols_symbols = {
         ctypes.POINTER(ctypes.c_int),
     ),
 }
+opaque_unions_types = {
+    'u': type('u', (ctypes.Union,), {}),
+    'u2': type('u2', (ctypes.Union,), {
+        '_fields_': [
+            ('a', ctypes.c_float),
+            ('b', ctypes.c_double),
+        ]
+    })
+}
+opaque_unions_types['u2_ptr'] = ctypes.POINTER(opaque_unions_types['u2'])
 
 @pytest.mark.parametrize('header_content,expected_types,expected_symbols',
     (
@@ -863,7 +872,22 @@ enum e2 {
                 'e2': enum.IntEnum('e2', ['A', 'B', 'C']),
             },
             {}
-        )
+        ),
+
+        # Opaque union
+        (
+'''
+union u;
+union u2;
+typedef union u2* u2_ptr;
+union u2 {
+    float a;
+    double b;
+};
+''',
+            opaque_unions_types,
+            {}
+        ),
     ),
     ids=(
         'empty header',
@@ -890,6 +914,7 @@ enum e2 {
         'unions and symbols',
         'enums and symbols',
         'opaque enum',
+        'opaque unions',
     )
 )
 def test_header(tmpdir,
