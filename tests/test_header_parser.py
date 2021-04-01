@@ -40,6 +40,8 @@ def types_are_equivalent(a, b) -> bool:
 
         assert a.__bases__ == b.__bases__
 
+        assert a.__qualname__ == b.__qualname__
+
         if not hasattr(a, "_fields_") and not hasattr(b, "_fields_"):
             return True
 
