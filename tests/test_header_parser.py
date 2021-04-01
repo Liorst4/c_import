@@ -5,6 +5,8 @@ import typing
 
 import pytest
 
+# TODO: Opaque enum
+# TODO: Opaque union
 # TODO: restrict qualifier
 # TODO: Compiler builtins
 
@@ -35,6 +37,8 @@ def types_are_equivalent(a, b) -> bool:
 
 
     if issubclass(a, (ctypes.Structure, ctypes.Union)):
+
+        assert a.__bases__ == b.__bases__
 
         if not hasattr(a, "_fields_") and not hasattr(b, "_fields_"):
             return True
