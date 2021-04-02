@@ -35,9 +35,11 @@ def types_are_equivalent(a, b) -> bool:
 
     if issubclass(a, (ctypes.Structure, ctypes.Union)):
 
-        assert a.__bases__ == b.__bases__
+        if a.__bases__ != b.__bases__:
+            return False
 
-        assert a.__qualname__ == b.__qualname__
+        if a.__qualname__ != b.__qualname__:
+            return False
 
         if not hasattr(a, "_fields_") and not hasattr(b, "_fields_"):
             return True
