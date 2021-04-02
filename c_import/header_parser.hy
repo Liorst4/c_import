@@ -124,25 +124,32 @@
 (defn create-fields [^CInterface scope
                      ^(. clang cindex Cursor) cursor
                      ^type cls]
-  (setv tmp-fields (->> (.get_children cursor)
+  (setv tmp-fields []
+        tmp-pack None)
 
-                        ;; TODO Handle non fields things
-                        (filter (fn [x] (= (. x kind)
-                                           (. clang
-                                              cindex
-                                              CursorKind
-                                              FIELD_DECL))))
+  (for [child (.get_children cursor)]
+    (cond [(= (. child kind) (. clang
+                                cindex
+                                CursorKind
+                                FIELD_DECL))
+           (.append tmp-fields
+                    (do
+                      (setv field [(. child spelling)
+                                   (get-type-or-create-variant
+                                     scope
+                                     (. child type))])
+                      (when (.is_bitfield child)
+                        (.append field (.get_bitfield_width child)))
+                      (tuple field)))]
 
-                        (map (fn [c] (do
-                                       (setv field [(. c spelling)
-                                                    (get-type-or-create-variant scope
-                                                                                (. c type))])
-                                       (when (.is_bitfield c)
-                                         (.append field
-                                                  (.get_bitfield_width c)))
-                                       (tuple field))))
+          [(= (. child kind) (. clang
+                                cindex
+                                CursorKind
+                                PACKED_ATTR))
+           (setv tmp-pack 1)]))
 
-                        (list)))
+  (when tmp-pack
+    (setv (. cls _pack_) tmp-pack))
   (when tmp-fields
     (setv (. cls _fields_) tmp-fields)))
 
