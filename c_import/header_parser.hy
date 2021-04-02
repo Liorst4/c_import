@@ -133,9 +133,14 @@
                                               CursorKind
                                               FIELD_DECL))))
 
-                        (map (fn [c] (tuple [(. c spelling)
-                                             (get-type-or-create-variant scope
-                                                                         (. c type))])))
+                        (map (fn [c] (do
+                                       (setv field [(. c spelling)
+                                                    (get-type-or-create-variant scope
+                                                                                (. c type))])
+                                       (when (.is_bitfield c)
+                                         (.append field
+                                                  (.get_bitfield_width c)))
+                                       (tuple field))))
 
                         (list)))
   (when tmp-fields
