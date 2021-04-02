@@ -14,8 +14,7 @@
                                  (. enum IntEnum)))
       SymbolTable (of Dict str OptionalPointerWrapper))
 
-(defclass __unknown_type [(. ctypes c_int)]
-  (setv _fields_ []))
+(defclass __unknown_type [(. ctypes c_int)])
 
 (defclass CInterface [NamedTuple]
   (setv ^TypeTable types (dict)
