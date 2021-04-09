@@ -241,7 +241,7 @@ opaque_unions_types = {
 }
 opaque_unions_types['u2_ptr'] = ctypes.POINTER(opaque_unions_types['u2'])
 
-@pytest.mark.parametrize('header_content,expected_types,expected_symbols',
+test_header_cases = (
     (
         # empty header
         (
@@ -891,7 +891,7 @@ union u2 {
             {}
         ),
     ),
-    ids=(
+    (
         'empty header',
         'basic type symbols',
         'basic typedef',
@@ -919,6 +919,10 @@ union u2 {
         'opaque unions',
     )
 )
+@pytest.mark.parametrize(
+    'header_content,expected_types,expected_symbols',
+    test_header_cases[0],
+    ids=test_header_cases[1])
 def test_header(tmpdir,
                 header_content: str,
                 expected_types,
