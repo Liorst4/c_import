@@ -216,8 +216,16 @@
         [(= (. cursor kind) (. clang cindex CursorKind ENUM_DECL)) (add-enum scope cursor)]
         [(= (. cursor kind) (. clang cindex CursorKind VAR_DECL)) (add-var scope cursor)]
         [(= (. cursor kind) (. clang cindex CursorKind FUNCTION_DECL)) (add-function scope cursor)]
-        [True (for [c (.get_children cursor)]
-                (handle-decleration scope c))]))
+        [True (raise (NotImplementedError (. cursor kind)))]))
+
+(defn handle-translation-unit [^CInterface scope
+                               ^(. clang cindex Cursor) cursor]
+  (assert (= (. cursor kind)
+             (. clang cindex CursorKind TRANSLATION_UNIT)))
+  (for [child (.get_children cursor)]
+    (do
+      (assert (.is_declaration (. child kind)))
+      (handle-decleration scope child))))
 
 (defn parse-header ^CInterface [^(. pathlib Path) header]
   (setv scope (CInterface (defaultdict (fn [] __unknown_type) (dict))
@@ -225,7 +233,7 @@
         index ((. clang cindex Index create))
         tu ((. index parse) header)
         cursor (. tu cursor))
-  (handle-decleration scope cursor)
+  (handle-translation-unit scope cursor)
   (assert (->> (in "" (.keys (. scope types)))
                not))
   scope)
