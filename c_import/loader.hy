@@ -6,8 +6,8 @@
         [c_import.header_parser [parse_header CInterface]])
 
 (defn preprocess-headers ^str [^(of Sequence Path) headers
-                               ^(of Sequence str) cpp-flags
-                               ^str cpp-command]
+                               ^str cpp-command
+                               ^(of Sequence str) cpp-flags]
   (with [include-all-file (NamedTemporaryFile :mode "w"
                                               :suffix ".h"
                                               :encoding "utf-8")]
@@ -34,7 +34,9 @@
                                                              :suffix ".h"
                                                              :delete False)]
                     (do
-                      (->> (preprocess-headers headers cpp-flags cpp-command)
+                      (->> (preprocess-headers headers
+                                               cpp-command
+                                               cpp-flags)
                            (.write combined-header))
                       (.flush combined-header)
                       (parse-header (. combined-header name)))))
