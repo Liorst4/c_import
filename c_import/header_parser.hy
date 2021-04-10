@@ -2,13 +2,11 @@
         pathlib
         enum
         [collections [defaultdict]]
-        [typing [Dict Callable Tuple NamedTuple Union]])
+        [typing [Dict Callable Tuple NamedTuple Union Optional]])
 
 (import clang.cindex)
 
-(setv VoidType (type None)
-      OptionalPointerWrapper (of Union (of Callable [int] object)
-                                 VoidType)
+(setv OptionalPointerWrapper (of Optional (of Callable [int] object))
       TypeTable (of Dict str (of Union
                                  OptionalPointerWrapper
                                  (. enum IntEnum)))
