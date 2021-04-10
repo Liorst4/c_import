@@ -65,14 +65,15 @@
 
         [(= (. clang-type kind) (. clang cindex TypeKind FUNCTIONPROTO))
          ;; TODO: Handle `...`
-         (.CFUNCTYPE ctypes
-                     (->> clang-type
-                          .get_result
-                          (get-type-or-create-variant scope))
-                     (->> clang-type
-                          .argument_types
-                          (map (fn [x] (get-type-or-create-variant scope x)))
-                          unpack-iterable))]
+         (do (assert (not (.is_function_variadic clang-type)))
+             (.CFUNCTYPE ctypes
+                         (->> clang-type
+                              .get_result
+                              (get-type-or-create-variant scope))
+                         (->> clang-type
+                              .argument_types
+                              (map (fn [x] (get-type-or-create-variant scope x)))
+                              unpack-iterable)))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind VOID)) None]
 
