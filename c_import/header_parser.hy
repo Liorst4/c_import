@@ -89,7 +89,10 @@
                                                           (get-type-or-create-variant scope)
                                                           (.POINTER ctypes))]
 
-        ;; TODO: TYPEDEF
+        [(= (. clang-type kind) (. clang cindex TypeKind TYPEDEF))
+         (->> (.get_canonical clang-type)
+              (get-type-or-create-variant scope))]
+
         ;; TODO: RECORD
 
         [True (do
