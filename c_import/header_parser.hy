@@ -94,6 +94,9 @@
               (get-type-or-create-variant scope))]
 
         ;; TODO: RECORD
+        [(= (. clang-type kind) (. clang cindex TypeKind INVALID))
+         (raise (ValueError))]
+
 
         [True (do
                 (setv type-id (->> (. clang-type spelling)
