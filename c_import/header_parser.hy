@@ -31,8 +31,6 @@
          (. ctypes c_ubyte)]
         [(= (. clang-type kind) (. clang cindex TypeKind UCHAR))
          (. ctypes c_ubyte)]
-        ;; TODO: CHAR16
-        ;; TODO: CHAR32
         [(= (. clang-type kind) (. clang cindex TypeKind USHORT))
          (. ctypes c_ushort)]
         [(= (. clang-type kind) (. clang cindex TypeKind UINT))
@@ -41,7 +39,6 @@
          (. ctypes c_ulong)]
         [(= (. clang-type kind) (. clang cindex TypeKind ULONGLONG))
          (. ctypes c_ulonglong)]
-        ;; TODO: UINT128
         [(= (. clang-type kind) (. clang cindex TypeKind CHAR_S))
          (. ctypes c_char)]
         [(= (. clang-type kind) (. clang cindex TypeKind SCHAR))
@@ -56,15 +53,12 @@
          (. ctypes c_long)]
         [(= (. clang-type kind) (. clang cindex TypeKind LONGLONG))
          (. ctypes c_longlong)]
-        ;; TODO: INT128
         [(= (. clang-type kind) (. clang cindex TypeKind FLOAT))
          (. ctypes c_float)]
         [(= (. clang-type kind) (. clang cindex TypeKind DOUBLE))
          (. ctypes c_double)]
         [(= (. clang-type kind) (. clang cindex TypeKind LONGDOUBLE))
          (. ctypes c_longdouble)]
-        ;; TODO: FLOAT128
-        ;; TODO: COMPLEX
 
         [(= (. clang-type kind) (. clang cindex TypeKind CONSTANTARRAY))
          ((. ctypes ARRAY) (get-type-or-create-variant scope (. clang-type element_type)) (. clang-type element_count))]
@@ -93,12 +87,11 @@
          (->> (.get_canonical clang-type)
               (get-type-or-create-variant scope))]
 
-        ;; TODO: RECORD
         [(= (. clang-type kind) (. clang cindex TypeKind INVALID))
          (raise (ValueError))]
 
-
-        [True (do
+        [(= (. clang-type kind) (. clang cindex TypeKind ELABORATED))
+         (do
                 (setv type-id (->> (. clang-type spelling)
                                    (.split)
                                    (filter (fn [x] (not (in x ["const"
@@ -113,7 +106,9 @@
                          (not keep-enum)
                          (issubclass existing-type (. enum IntEnum)))
                     (. ctypes c_int)
-                    existing-type))]))
+                    existing-type))]
+
+        [True (raise (NotImplementedError (. clang-type kind)))]))
 
 (defn add-typedef [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
