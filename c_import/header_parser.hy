@@ -1,7 +1,6 @@
 (import ctypes
         pathlib
         enum
-        [collections [defaultdict]]
         [typing [Dict Callable Tuple NamedTuple Union Optional]])
 
 (import clang.cindex)
@@ -11,8 +10,6 @@
                                  OptionalPointerWrapper
                                  (. enum IntEnum)))
       SymbolTable (of Dict str OptionalPointerWrapper))
-
-(defclass __unknown_type [(. ctypes c_int)])
 
 (defclass CInterface [NamedTuple]
   (setv ^TypeTable types (dict)
@@ -239,7 +236,7 @@
       (handle-decleration scope child)))
 
 (defn parse-header ^CInterface [^(. pathlib Path) header]
-  (setv scope (CInterface (defaultdict (fn [] __unknown_type) (dict))
+  (setv scope (CInterface (dict)
                           (dict))
         index ((. clang cindex Index create))
         tu ((. index parse) header)
