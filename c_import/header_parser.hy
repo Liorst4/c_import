@@ -113,6 +113,8 @@
                     existing-type))]))
 
 (defn add-typedef [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (assert (= (. cursor kind)
+             (. clang cindex CursorKind TYPEDEF_DECL)))
   (assoc (. scope types)
          (. cursor spelling)
          (get-type-or-create-variant scope
@@ -152,6 +154,8 @@
     (setv (. cls _fields_) tmp-fields)))
 
 (defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (assert (= (. cursor kind)
+             (. clang cindex CursorKind STRUCT_DECL)))
   (setv struct-name (. cursor type spelling))
   (when (.startswith struct-name "struct ")
     (setv struct-name (cut struct-name (len "struct "))))
@@ -164,6 +168,8 @@
   (create-fields scope cursor struct))
 
 (defn add-union [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (assert (= (. cursor kind)
+             (. clang cindex CursorKind UNION_DECL)))
   (setv union-name (. cursor type spelling))
   (when (.startswith union-name "union ")
     (setv union-name (cut union-name (len "union "))))
@@ -176,6 +182,8 @@
   (create-fields scope cursor union))
 
 (defn add-enum [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (assert (= (. cursor kind)
+             (. clang cindex CursorKind ENUM_DECL)))
   (setv enum-name (. cursor type spelling))
   (when (.startswith enum-name "enum ")
     (setv enum-name (cut enum-name (len "enum "))))
@@ -192,12 +200,16 @@
                      list))))
 
 (defn add-var [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (assert (= (. cursor kind)
+             (. clang cindex CursorKind VAR_DECL)))
   (setv var-type (get-type-or-create-variant scope (. cursor type)))
   (assoc (. scope symbols) (. cursor spelling) var-type))
 
 (defn add-function [^CInterface scope ^(. clang cindex Cursor) cursor]
   ;; TODO: Handle stdcall
   ;; TODO: Handle "..."
+  (assert (= (. cursor kind)
+             (. clang cindex CursorKind FUNCTION_DECL)))
   (setv function (.CFUNCTYPE ctypes
                              (->> (. cursor result_type)
                                   (get-type-or-create-variant scope))
@@ -210,6 +222,7 @@
 
 (defn handle-decleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   ;; Use a macro?
+  (assert (.is_declaration (. cursor kind)))
   (cond [(= (. cursor kind) (. clang cindex CursorKind TYPEDEF_DECL)) (add-typedef scope cursor)]
         [(= (. cursor kind) (. clang cindex CursorKind STRUCT_DECL)) (add-struct scope cursor)]
         [(= (. cursor kind) (. clang cindex CursorKind UNION_DECL)) (add-union scope cursor)]
@@ -223,9 +236,7 @@
   (assert (= (. cursor kind)
              (. clang cindex CursorKind TRANSLATION_UNIT)))
   (for [child (.get_children cursor)]
-    (do
-      (assert (.is_declaration (. child kind)))
-      (handle-decleration scope child))))
+      (handle-decleration scope child)))
 
 (defn parse-header ^CInterface [^(. pathlib Path) header]
   (setv scope (CInterface (defaultdict (fn [] __unknown_type) (dict))
