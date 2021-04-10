@@ -1,13 +1,18 @@
 (import subprocess
         ctypes
+        os
         [tempfile [NamedTemporaryFile]]
         [pathlib [Path]]
-        [typing [Sequence]]
+        [typing [Sequence Optional]]
         [c_import.header_parser [parse_header CInterface]])
 
 (defn preprocess-headers ^str [^(of Sequence Path) headers
-                               ^str cpp-command
+                               ^(of Optional str) cpp-command
                                ^(of Sequence str) cpp-flags]
+  (unless cpp-command
+    (setv cpp-command (.get (. os environ) "CPP" "cpp")))
+  (unless cpp-flags
+    (setv cpp-flags (.get (. os environ) "CPPFLAGS" [])))
   (with [include-all-file (NamedTemporaryFile :mode "w"
                                               :suffix ".h"
                                               :encoding "utf-8")]
@@ -26,8 +31,8 @@
 (defn load ^(. ctypes CDLL) [^Path library
                              ^(of Sequence Path) headers
                              &optional
-                             [cpp-command "cpp"]
-                             [cpp-flags []]]
+                             [cpp-command None]
+                             [cpp-flags None]]
   (setv dll (.CDLL ctypes library)
         interface (with [combined-header (NamedTemporaryFile :mode "w"
                                                              :encoding "utf-8"
