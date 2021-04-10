@@ -145,7 +145,9 @@
                                 cindex
                                 CursorKind
                                 PACKED_ATTR))
-           (setv tmp-pack 1)]))
+           (setv tmp-pack 1)]
+
+          [True (raise (NotImplementedError (. child kind)))]))
 
   (when tmp-pack
     (setv (. cls _pack_) tmp-pack))
