@@ -15,6 +15,17 @@
   (setv ^TypeTable types (dict)
         ^SymbolTable symbols (dict)))
 
+(defn remove-quialiers-and-specifiers [name]
+  (->> name
+       (.split)
+       (filter (fn [x] (not (in x ["const"
+                                   "volatile"
+                                   "enum"
+                                   "struct"
+                                   "union"
+                                   "restrict"]))))
+       (.join " ")))
+
 (defn get-type-or-create-variant ^OptionalPointerWrapper [^CInterface scope
                                                           ^(. clang cindex Type) clang-type
                                                           &optional [keep-enum False]]
@@ -91,17 +102,17 @@
         [(= (. clang-type kind) (. clang cindex TypeKind INVALID))
          (raise (ValueError))]
 
+        [(= (. clang-type kind) (. clang cindex TypeKind RECORD))
+         (do (setv type-id (->> (. clang-type spelling)
+                                (remove-quialiers-and-specifiers)))
+             (unless (in type-id (. scope types))
+               (add-struct scope (.get_declaration clang-type)))
+             (get (. scope types) type-id))]
+
         [(= (. clang-type kind) (. clang cindex TypeKind ELABORATED))
          (do
                 (setv type-id (->> (. clang-type spelling)
-                                   (.split)
-                                   (filter (fn [x] (not (in x ["const"
-                                                               "volatile"
-                                                               "enum"
-                                                               "struct"
-                                                               "union"
-                                                               "restrict"]))))
-                                   (.join " "))
+                                   (remove-quialiers-and-specifiers))
                       existing-type (get (. scope types) type-id))
                 (if (and existing-type
                          (not keep-enum)

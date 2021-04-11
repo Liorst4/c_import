@@ -959,3 +959,17 @@ struct node {
     assert issubclass(types['node']._fields_[0][1], ctypes._Pointer)
     assert types['node']._fields_[0][1]._type_ == types['node']
     assert types['node']._fields_[0][1]._type_._fields_[0][0] == 'next'
+
+def test_builtin_record(tmpdir):
+    header_content = 'typedef __builtin_va_list thingy;'
+    header = tmpdir / 'header.h'
+    header.write(header_content)
+    types, _ = c_import.header_parser.parse_header(header)
+    assert 'thingy' in types
+    assert types['thingy'] is not None
+    assert any(issubclass(types['thingy'], x) for x in (
+        ctypes.Structure,
+        ctypes.Union,
+        ctypes._Pointer,
+        ctypes.Array
+    ))
