@@ -290,6 +290,8 @@ test_header_cases = (
 
     double *restrict global45;
 
+    double global46, global47, *global48, global49;
+
     foo1();
     int foo2();
     int foo3(void);
@@ -384,6 +386,11 @@ test_header_cases = (
                 'global44': ctypes.c_double,
 
                 'global45': ctypes.POINTER(ctypes.c_double),
+
+                'global46': ctypes.c_double,
+                'global47': ctypes.c_double,
+                'global48': ctypes.POINTER(ctypes.c_double),
+                'global49': ctypes.c_double,
 
                 'foo1': ctypes.CFUNCTYPE(ctypes.c_int),
                 'foo2': ctypes.CFUNCTYPE(ctypes.c_int),
