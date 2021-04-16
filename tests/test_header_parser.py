@@ -75,33 +75,6 @@ def types_are_equivalent(a, b) -> bool:
 
 
 # Example classes used in parametrize
-class struct_with_anon_union(ctypes.Structure):
-    class _anon1(ctypes.Union):
-        _fields_ = [('x', ctypes.c_int), ('y', ctypes.c_longlong)]
-    _anonymous_ = ('_anon1',)
-    _fields_=[('_anon1', _anon1), ('z', ctypes.c_double)]
-class struct_with_anon_struct_member(ctypes.Structure):
-    class _anon1(ctypes.Union):
-        _fields_ = [('x', ctypes.c_int), ('y', ctypes.c_longlong)]
-    _fields_=[('a', _anon1), ('b', ctypes.c_double)]
-symbols_with_anonymous_types_types = {
-    '_anon1': type('_anon1', (ctypes.Structure,), {
-        '_fields_': [
-            ('x', ctypes.c_int),
-            ('y', ctypes.c_float),
-        ]
-    }),
-    '_anon2': type('_anon2', (ctypes.Union,), {
-        '_fields_': [
-            ('x', ctypes.c_int),
-            ('y', ctypes.c_float),
-        ]
-    }),
-}
-symbols_with_anonymous_types_symbols = {
-    'my_global1': symbols_with_anonymous_types_types['_anon1'],
-    'my_global2': symbols_with_anonymous_types_types['_anon2'],
-}
 opaque_types_types = {
     'thing': type('thing', (ctypes.Structure,), {}),
     'thing2': type(
@@ -654,72 +627,6 @@ struct thing2 {
             {},
         ),
 
-        # struct with anonymous union members
-        (
-'''
-struct struct_with_anon_union {
-    union {
-        int x;
-        long long int y;
-    };
-    double z;
-};
-''',
-            {
-                'struct_with_anon_union': struct_with_anon_union,
-            },
-            {}
-        ),
-
-        # struct with anonymous struct member
-        (
-'''
-struct struct_with_anon_struct_member {
-    struct {
-        int x;
-        long long int y;
-    } a;
-    double b;
-};
-''',
-            {
-                'struct_with_anon_struct_member': struct_with_anon_struct_member
-            },
-            {}
-        ),
-
-        # symbols with anonymous types
-        (
-'''
-struct {
-    int x;
-    float y;
-} my_global1;
-
-union {
-    int x;
-    float y;
-} my_global2;
-''',
-            symbols_with_anonymous_types_types.copy(),
-            symbols_with_anonymous_types_symbols.copy()
-        ),
-
-        # anonymous enum
-        (
-'''
-enum {
-    A,
-    B,
-    C
-};
-''',
-            {
-                '_anon1': enum.IntEnum('_anon1', ['A', 'B', 'C']),
-            },
-            {}
-        ),
-
         # typedef of function pointer
         (
 '''
@@ -905,10 +812,6 @@ union u2 {
         'typedef of anonymous stuff',
         'pointer typedefs',
         'opaque types',
-        'struct with anonymous union members',
-        'struct with anonymous struct member',
-        'symbols with anonymous types',
-        'anonymous enum',
         'typedef of function pointer',
         'struct with bitfields',
         'packed structs',
@@ -973,3 +876,216 @@ def test_builtin_record(tmpdir):
         ctypes._Pointer,
         ctypes.Array
     ))
+
+
+def test_types_with_unbounded_nested_anonymous_types(tmpdir):
+    header_content = '''
+struct s {
+    union {
+        int x;
+        long long int y;
+    };
+    double z;
+    struct {
+        int a;
+        int b;
+    };
+};
+
+union u {
+    union {
+        int x;
+        long long int y;
+    };
+    double z;
+    struct {
+        int a;
+        int b;
+    };
+};
+'''
+    header = tmpdir / 'header.h'
+    header.write(header_content)
+    types, _ = c_import.header_parser.parse_header(header)
+
+    assert 's' in types
+    assert issubclass(types['s'], ctypes.Structure)
+    assert types['s']._anonymous_
+    instance = types['s'](x=5, z=3.5, a=4, b=8)
+    for i in ('x', 'y', 'z', 'a', 'b'):
+        assert hasattr(instance, i)
+    assert instance.x == instance.y
+
+    assert 'u' in types
+    assert issubclass(types['u'], ctypes.Union)
+    assert types['u']._anonymous_
+    instance2 = types['u']()
+    for i in ('x', 'y', 'z', 'a', 'b'):
+        assert hasattr(instance2, i)
+
+
+def test_types_with_bounded_nested_anonymous_types(tmpdir):
+    header_content = '''
+struct other_type {
+    char cc;
+    char yy;
+}
+
+struct s {
+    struct {
+        int x;
+        long long int y;
+        struct other_type t;
+    } a;
+    double b;
+    struct {
+        float f;
+        double d;
+    } c, *d;
+};
+
+union u {
+    struct {
+        int x;
+        long long int y;
+        struct other_type t;
+    } a;
+    double b;
+    struct {
+        float f;
+        double d;
+    } c, *d;
+};
+'''
+    header = tmpdir / 'header.h'
+    header.write(header_content)
+    types, _ = c_import.header_parser.parse_header(header)
+
+    assert 'other_type' in types
+    class other_type(ctypes.Structure):
+        _fields_ = [('cc', ctypes.c_char),
+                    ('yy', ctypes.c_char)]
+    assert types_are_equivalent(types['other_type'], other_type)
+
+    assert 's' in types
+    assert issubclass(types['s'], ctypes.Structure)
+    instance = types['s']()
+    instance.d = ctypes.pointer(instance.c)
+    assert isinstance(instance.a, ctypes.Structure)
+    assert isinstance(instance.b, ctypes.Structure)
+    assert isinstance(instance.c, ctypes.Structure)
+    assert isinstance(instance.d._type_, ctypes.Structure)
+    for i in ('x','y', 't'):
+        assert hasattr(instance.a, i)
+    assert isinstance(instance.a.t, other_type)
+    for i in ('f','d'):
+        assert hasattr(instance.c, i)
+    for i in ('f','d'):
+        assert hasattr(instance.d.contents, i)
+
+    assert 'u' in types
+    assert issubclass(types['u'], ctypes.Union)
+    instance2 = types['u']()
+    assert isinstance(instance2.a, ctypes.Structure)
+    assert isinstance(instance2.b, ctypes.Structure)
+    assert isinstance(instance2.c, ctypes.Structure)
+    assert isinstance(instance2.d._type_, ctypes.Structure)
+    for i in ('x','y', 't'):
+        assert hasattr(instance2.a, i)
+    assert isinstance(instance2.a.t, other_type)
+    for i in ('f','d'):
+        assert hasattr(instance2.c, i)
+    instance3 = types['u']()
+    instance3.c.f = 1
+    instance3.c.d = 2
+    instance2.d = ctypes.pointer(instance3.c)
+    for i in ('f','d'):
+        assert hasattr(instance2.d.contents, i)
+    assert instance2.d.contents.c.f == 1
+    assert instance2.d.contents.c.d == 2
+
+
+def test_symbols_with_anonymous_types(tmpdir):
+    header_content = '''
+struct {
+    int x;
+    float y;
+} g1;
+
+struct {
+    int x;
+    float y;
+} g2, *g3;
+
+union {
+    int x;
+    float y;
+} g4;
+
+union {
+    int x;
+    float y;
+} g5, *g6;
+
+enum {
+    A,
+    B,
+    C,
+} g7;
+
+enum {
+    E,
+    F,
+    G,
+} g8, *g9;
+'''
+    header = tmpdir / 'header.h'
+    header.write(header_content)
+    _, symbols = c_import.header_parser.parse_header(header)
+    for i in range(1,10):
+        assert f'g{i}' in symbols
+
+    assert issubclass(symbols['g1'], ctypes.Structure)
+    assert symbols['g1']._fields_ == [
+        ('x', ctypes.c_int),
+        ('y', ctypes.c_float)
+    ]
+
+    assert issubclass(symbols['g2'], ctypes.Structure)
+    assert symbols['g2']._fields_ == [
+        ('x', ctypes.c_int),
+        ('y', ctypes.c_float)
+    ]
+
+    assert issubclass(symbols['g3'], ctypes._Pointer)
+    assert issubclass(symbols['g3']._type_, ctypes.Structure)
+    assert symbols['g3']._type_._fields_ == [
+        ('x', ctypes.c_int),
+        ('y', ctypes.c_float)
+    ]
+
+    assert issubclass(symbols['g4'], ctypes.Union)
+    assert symbols['g4']._fields_ == [
+        ('x', ctypes.c_int),
+        ('y', ctypes.c_float)
+    ]
+
+    assert issubclass(symbols['g5'], ctypes.Union)
+    assert symbols['g5']._fields_ == [
+        ('x', ctypes.c_int),
+        ('y', ctypes.c_float)
+    ]
+
+    assert issubclass(symbols['g6'], ctypes._Pointer)
+    assert issubclass(symbols['g6']._type_, ctypes.Union)
+    assert symbols['g6']._type_._fields_ == [
+        ('x', ctypes.c_int),
+        ('y', ctypes.c_float)
+    ]
+
+    assert symbols['g7'] == ctypes.c_int
+    assert symbols['g8'] == ctypes.c_int
+    assert symbols['g9'] == ctypes.POINTER(ctypes.c_int)
+
+
+# TODO: Anonymous enum (without any symbols bounded to it)
