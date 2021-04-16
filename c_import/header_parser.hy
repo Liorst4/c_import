@@ -1,7 +1,8 @@
 (import ctypes
         pathlib
         enum
-        [typing [Dict Callable Tuple NamedTuple Union Optional]])
+        [typing [Dict Callable Tuple NamedTuple Union Optional
+                 Sequence]])
 
 (import clang.cindex)
 
@@ -132,36 +133,65 @@
                                      :keep-enum True)))
 
 (defn create-fields [^CInterface scope
-                     ^(. clang cindex Cursor) cursor
+                     ^(of Sequence (. clang cindex Cursor)) fields
                      ^type cls]
   (setv tmp-fields []
-        tmp-pack None)
+        tmp-pack None
+        tmp-anon [])
 
-  (for [child (.get_children cursor)]
-    (cond [(= (. child kind) (. clang
-                                cindex
-                                CursorKind
-                                FIELD_DECL))
+  (for [field-cursor fields]
+    (cond [(= (. field-cursor kind) (. clang
+                                       cindex
+                                       CursorKind
+                                       FIELD_DECL))
            (.append tmp-fields
-                    (do
-                      (setv field [(. child spelling)
-                                   (get-type-or-create-variant
-                                     scope
-                                     (. child type))])
-                      (when (.is_bitfield child)
-                        (.append field (.get_bitfield_width child)))
+                    (do (setv field [(. field-cursor spelling)
+                                     (get-type-or-create-variant
+                                       scope
+                                       (. field-cursor type))])
+                      (when (.is_bitfield field-cursor)
+                        (.append field (.get_bitfield_width
+                                         field-cursor)))
                       (tuple field)))]
 
-          [(= (. child kind) (. clang
-                                cindex
-                                CursorKind
-                                PACKED_ATTR))
+          [(= (. field-cursor kind) (. clang
+                                       cindex
+                                       CursorKind
+                                       PACKED_ATTR))
            (setv tmp-pack 1)]
 
-          [True (raise (NotImplementedError (. child kind)))]))
+          [(in (. field-cursor kind) [(. clang
+                                         cindex
+                                         CursorKind
+                                         UNION_DECL)
+                                      (. clang
+                                         cindex
+                                         CursorKind
+                                         STRUCT_DECL)])
+           (do (setv field-name (str (hash (str field-cursor)))
+                     field-type (type ""
+                                      (tuple [(if (= (. field-cursor
+                                                        kind)
+                                                     (. clang
+                                                        cindex
+                                                        CursorKind
+                                                        UNION_DECL))
+                                                  (. ctypes Union)
+                                                  (. ctypes
+                                                     Structure))])
+                                      (dict)))
+               (create-fields scope
+                              (.get_children field-cursor)
+                              field-type)
+               (.append tmp-anon field-name)
+               (.append tmp-fields (tuple [field-name field-type])))]
+
+          [True (raise (NotImplementedError (. field-cursor kind)))]))
 
   (when tmp-pack
     (setv (. cls _pack_) tmp-pack))
+  (when tmp-anon
+    (setv (. cls _anonymous_) tmp-anon))
   (when tmp-fields
     (setv (. cls _fields_) tmp-fields)))
 
@@ -177,7 +207,7 @@
                          (tuple [(. ctypes Structure)])
                          (dict))))
   (assoc (. scope types) struct-name struct)
-  (create-fields scope cursor struct))
+  (create-fields scope (.get_children cursor) struct))
 
 (defn add-union [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
@@ -191,7 +221,7 @@
                          (tuple [(. ctypes Union)])
                          (dict))))
   (assoc (. scope types) union-name union)
-  (create-fields scope cursor union))
+  (create-fields scope (.get_children cursor) union))
 
 (defn add-enum [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
