@@ -146,9 +146,14 @@
                                        FIELD_DECL))
            (.append tmp-fields
                     (do (setv field [(. field-cursor spelling)
-                                     (get-type-or-create-variant
-                                       scope
-                                       (. field-cursor type))])
+                                     (if (-> (. field-cursor type)
+                                             .get_declaration
+                                             .is_anonymous)
+                                         ;; TODO: Pointer arrays etc
+                                         (raise NotImplementedError)
+                                         (get-type-or-create-variant
+                                           scope
+                                           (. field-cursor type)))])
                       (when (.is_bitfield field-cursor)
                         (.append field (.get_bitfield_width
                                          field-cursor)))
