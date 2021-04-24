@@ -804,6 +804,19 @@ union u2 {
             opaque_unions_types,
             {}
         ),
+
+        # sizeof usage
+        (
+'''
+double a;
+char b[sizeof(a)];
+''',
+            {},
+            {
+                'a': ctypes.c_double,
+                'b': ctypes.ARRAY(ctypes.c_char, ctypes.sizeof(ctypes.c_double)),
+            }
+        ),
     ),
     (
         'empty header',
@@ -827,6 +840,7 @@ union u2 {
         'enums and symbols',
         'opaque enum',
         'opaque unions',
+        'sizeof usage'
     )
 )
 @pytest.mark.parametrize(
