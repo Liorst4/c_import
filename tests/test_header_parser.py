@@ -962,7 +962,7 @@ struct s {
     struct {
         float f;
         double d;
-    } c, *d;
+    } c, *d, e[10];
 };
 
 union u {
@@ -975,7 +975,7 @@ union u {
     struct {
         float f;
         double d;
-    } c, *d;
+    } c, *d, e[10];
 };
 '''
     header = tmpdir / 'header.h'
@@ -996,6 +996,8 @@ union u {
     assert isinstance(instance.b, ctypes.Structure)
     assert isinstance(instance.c, ctypes.Structure)
     assert isinstance(instance.d._type_, ctypes.Structure)
+    assert isinstance(instance.e, ctypes.Array)
+    assert len(instance.e) == 10
     for i in ('x','y', 't'):
         assert hasattr(instance.a, i)
     assert isinstance(instance.a.t, other_type)
@@ -1003,6 +1005,8 @@ union u {
         assert hasattr(instance.c, i)
     for i in ('f','d'):
         assert hasattr(instance.d.contents, i)
+    for i in ('f','d'):
+        assert hasattr(instance.e[0], i)
 
     assert 'u' in types
     assert issubclass(types['u'], ctypes.Union)
@@ -1011,11 +1015,15 @@ union u {
     assert isinstance(instance2.b, ctypes.Structure)
     assert isinstance(instance2.c, ctypes.Structure)
     assert isinstance(instance2.d._type_, ctypes.Structure)
+    assert isinstance(instance2.e, ctypes.Array)
+    assert len(instance2.e) == 10
     for i in ('x','y', 't'):
         assert hasattr(instance2.a, i)
     assert isinstance(instance2.a.t, other_type)
     for i in ('f','d'):
         assert hasattr(instance2.c, i)
+    for i in ('f','d'):
+        assert hasattr(instance2.e[0], i)
     instance3 = types['u']()
     instance3.c.f = 1
     instance3.c.d = 2
