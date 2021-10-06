@@ -203,9 +203,8 @@
 (defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
              (. clang cindex CursorKind STRUCT_DECL)))
-  (setv struct-name (. cursor type spelling))
-  (when (.startswith struct-name "struct ")
-    (setv struct-name (cut struct-name (len "struct "))))
+  (setv struct-name (-> (. cursor type spelling)
+                        remove-qualifiers-and-specifiers))
   (setv struct (if (in struct-name (. scope types))
                    (get (. scope types) struct-name)
                    (type struct-name
@@ -217,9 +216,8 @@
 (defn add-union [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
              (. clang cindex CursorKind UNION_DECL)))
-  (setv union-name (. cursor type spelling))
-  (when (.startswith union-name "union ")
-    (setv union-name (cut union-name (len "union "))))
+  (setv union-name (-> (. cursor type spelling)
+                       remove-qualifiers-and-specifiers))
   (setv union (if (in union-name (. scope types))
                    (get (. scope types) union-name)
                    (type union-name
@@ -231,9 +229,8 @@
 (defn add-enum [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
              (. clang cindex CursorKind ENUM_DECL)))
-  (setv enum-name (. cursor type spelling))
-  (when (.startswith enum-name "enum ")
-    (setv enum-name (cut enum-name (len "enum "))))
+  (setv enum-name (-> (. cursor type spelling)
+                      remove-qualifiers-and-specifiers))
   (assoc (. scope types)
          enum-name
          (.IntEnum enum
