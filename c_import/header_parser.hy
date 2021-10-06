@@ -16,7 +16,7 @@
   (setv ^TypeTable types (dict)
         ^SymbolTable symbols (dict)))
 
-(defn remove-quialiers-and-specifiers [name]
+(defn remove-qualifiers-and-specifiers [name]
   (->> name
        (.split)
        (filter (fn [x] (not (in x ["const"
@@ -105,7 +105,7 @@
 
         [(= (. clang-type kind) (. clang cindex TypeKind RECORD))
          (do (setv type-id (->> (. clang-type spelling)
-                                (remove-quialiers-and-specifiers)))
+                                (remove-qualifiers-and-specifiers)))
              (unless (in type-id (. scope types))
                (add-struct scope (.get_declaration clang-type)))
              (get (. scope types) type-id))]
@@ -113,7 +113,7 @@
         [(= (. clang-type kind) (. clang cindex TypeKind ELABORATED))
          (do
                 (setv type-id (->> (. clang-type spelling)
-                                   (remove-quialiers-and-specifiers))
+                                   (remove-qualifiers-and-specifiers))
                       existing-type (get (. scope types) type-id))
                 (if (and existing-type
                          (not keep-enum)
