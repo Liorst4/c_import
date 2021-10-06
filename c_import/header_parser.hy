@@ -204,8 +204,8 @@
   (assert (= (. cursor kind)
              (. clang cindex CursorKind STRUCT_DECL)))
   (setv struct-name (-> (. cursor type spelling)
-                        remove-qualifiers-and-specifiers))
-  (setv struct (if (in struct-name (. scope types))
+                        remove-qualifiers-and-specifiers)
+        struct (if (in struct-name (. scope types))
                    (get (. scope types) struct-name)
                    (type struct-name
                          (tuple [(. ctypes Structure)])
@@ -217,8 +217,8 @@
   (assert (= (. cursor kind)
              (. clang cindex CursorKind UNION_DECL)))
   (setv union-name (-> (. cursor type spelling)
-                       remove-qualifiers-and-specifiers))
-  (setv union (if (in union-name (. scope types))
+                       remove-qualifiers-and-specifiers)
+        union (if (in union-name (. scope types))
                    (get (. scope types) union-name)
                    (type union-name
                          (tuple [(. ctypes Union)])
