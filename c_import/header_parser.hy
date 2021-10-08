@@ -154,10 +154,11 @@
                                          (get-type-or-create-variant
                                            scope
                                            (. field-cursor type)))])
-                      (when (.is_bitfield field-cursor)
-                        (.append field (.get_bitfield_width
-                                         field-cursor)))
-                      (tuple field)))]
+
+                        (when (.is_bitfield field-cursor)
+                          (.append field (.get_bitfield_width
+                                           field-cursor)))
+                        (tuple field)))]
 
           [(= (. field-cursor kind) (. clang
                                        cindex
