@@ -247,13 +247,15 @@
          enum-name
          (.IntEnum enum
                    enum-name
-                   (->
-                     (map (fn [c] (do
-                                    (assert (= (. clang cindex CursorKind ENUM_CONSTANT_DECL)
-                                               (. c kind)))
-                                    (. c spelling)))
-                          (.get_children cursor))
-                     list))))
+                   ;; Enum fields
+                   (-> (map (fn [c] (do (assert (= (. clang
+                                                      cindex
+                                                      CursorKind
+                                                      ENUM_CONSTANT_DECL)
+                                                   (. c kind)))
+                                        (. c spelling)))
+                            (.get_children cursor))
+                       list))))
 
 (defn add-var [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
