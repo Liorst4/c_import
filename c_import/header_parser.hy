@@ -283,8 +283,9 @@
       (handle-decleration scope child)))
 
 (defn parse-header ^CInterface [^(. pathlib Path) header]
-  (setv scope (CInterface (dict)
-                          (dict))
+  "Create a CInterface instance from a given header file."
+  (setv scope (CInterface :types (dict)
+                          :symbols (dict))
         index ((. clang cindex Index create))
         tu ((. index parse) header)
         cursor (. tu cursor))
