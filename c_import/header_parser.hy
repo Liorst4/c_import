@@ -200,31 +200,43 @@
   (when tmp-fields
     (setv (. cls _fields_) tmp-fields)))
 
-(defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
-  (assert (= (. cursor kind)
-             (. clang cindex CursorKind STRUCT_DECL)))
-  (setv struct-name (-> (. cursor type spelling)
+(defn add-type-with-feilds [expected-cursor-kind
+                            ctypes-type
+                            ^CInterface scope
+                            ^(. clang cindex Cursor) cursor]
+  "Add (or expand in the case of a forward decleration) a ctype with fields to a scope"
+  (assert (= (. cursor kind) expected-cursor-kind))
+  (setv type-name (-> (. cursor type spelling)
                         remove-qualifiers-and-specifiers)
-        struct (if (in struct-name (. scope types))
-                   (get (. scope types) struct-name)
-                   (type struct-name
-                         (tuple [(. ctypes Structure)])
-                         (dict))))
-  (assoc (. scope types) struct-name struct)
-  (create-fields scope (.get_children cursor) struct))
+
+        ctype (if (in type-name (. scope types))
+
+                  ;; Get a forward decleration reference
+                  ;; to expand.
+                  ;; TODO: Verifiy its a forward decleration
+                  (get (. scope types) type-name)
+
+                  ;; Create a new ctypes class
+                  (type type-name
+                        (tuple [ctypes-type])
+                        (dict))))
+
+  (assoc (. scope types) type-name ctype) ;; Add refrence to table
+
+  ;; Create body
+  (create-fields scope (.get_children cursor) ctype))
+
+(defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
+  (add-type-with-feilds (. clang cindex CursorKind STRUCT_DECL)
+                        (. ctypes Structure)
+                        scope
+                        cursor))
 
 (defn add-union [^CInterface scope ^(. clang cindex Cursor) cursor]
-  (assert (= (. cursor kind)
-             (. clang cindex CursorKind UNION_DECL)))
-  (setv union-name (-> (. cursor type spelling)
-                       remove-qualifiers-and-specifiers)
-        union (if (in union-name (. scope types))
-                   (get (. scope types) union-name)
-                   (type union-name
-                         (tuple [(. ctypes Union)])
-                         (dict))))
-  (assoc (. scope types) union-name union)
-  (create-fields scope (.get_children cursor) union))
+  (add-type-with-feilds (. clang cindex CursorKind UNION_DECL)
+                        (. ctypes Union)
+                        scope
+                        cursor))
 
 (defn add-enum [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
