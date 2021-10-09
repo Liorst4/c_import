@@ -950,7 +950,7 @@ def test_types_with_bounded_nested_anonymous_types(tmpdir):
 struct other_type {
     char cc;
     char yy;
-}
+};
 
 struct s {
     struct {
@@ -993,14 +993,14 @@ union u {
     instance = types['s']()
     instance.d = ctypes.pointer(instance.c)
     assert isinstance(instance.a, ctypes.Structure)
-    assert isinstance(instance.b, ctypes.Structure)
+    assert isinstance(instance.b, (ctypes.c_double, float))
     assert isinstance(instance.c, ctypes.Structure)
-    assert isinstance(instance.d._type_, ctypes.Structure)
+    assert issubclass(instance.d._type_, ctypes.Structure)
     assert isinstance(instance.e, ctypes.Array)
     assert len(instance.e) == 10
     for i in ('x','y', 't'):
         assert hasattr(instance.a, i)
-    assert isinstance(instance.a.t, other_type)
+    assert instance.a.t.__class__.__name__ == "other_type"
     for i in ('f','d'):
         assert hasattr(instance.c, i)
     for i in ('f','d'):
@@ -1012,14 +1012,14 @@ union u {
     assert issubclass(types['u'], ctypes.Union)
     instance2 = types['u']()
     assert isinstance(instance2.a, ctypes.Structure)
-    assert isinstance(instance2.b, ctypes.Structure)
+    assert isinstance(instance2.b, (ctypes.c_double, float))
     assert isinstance(instance2.c, ctypes.Structure)
-    assert isinstance(instance2.d._type_, ctypes.Structure)
+    assert issubclass(instance2.d._type_, ctypes.Structure)
     assert isinstance(instance2.e, ctypes.Array)
     assert len(instance2.e) == 10
     for i in ('x','y', 't'):
         assert hasattr(instance2.a, i)
-    assert isinstance(instance2.a.t, other_type)
+    assert instance2.a.t.__class__.__name__ == "other_type"
     for i in ('f','d'):
         assert hasattr(instance2.c, i)
     for i in ('f','d'):
@@ -1030,8 +1030,8 @@ union u {
     instance2.d = ctypes.pointer(instance3.c)
     for i in ('f','d'):
         assert hasattr(instance2.d.contents, i)
-    assert instance2.d.contents.c.f == 1
-    assert instance2.d.contents.c.d == 2
+    assert instance2.d.contents.f == 1
+    assert instance2.d.contents.d == 2
 
 
 def test_symbols_with_anonymous_types(tmpdir):
