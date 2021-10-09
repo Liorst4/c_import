@@ -107,7 +107,7 @@
          (do (setv type-id (->> (. clang-type spelling)
                                 (remove-qualifiers-and-specifiers)))
              (unless (in type-id (. scope types))
-               (add-struct scope (.get_declaration clang-type)))
+               (handle-struct-deceleration scope (.get_declaration clang-type)))
              (get (. scope types) type-id))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind ELABORATED))
@@ -123,7 +123,7 @@
 
         [True (raise (NotImplementedError (. clang-type kind)))]))
 
-(defn add-typedef [^CInterface scope ^(. clang cindex Cursor) cursor]
+(defn handle-typedef-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
              (. clang cindex CursorKind TYPEDEF_DECL)))
   (assoc (. scope types)
@@ -132,9 +132,9 @@
                                      (. cursor underlying_typedef_type)
                                      :keep-enum True)))
 
-(defn handle-ctype-declarations [^CInterface scope
-                                 ^(. clang cindex Cursor) cursor
-                                 ^type empty-ctype]
+(defn handle-type-declaration-body [^CInterface scope
+                                    ^(. clang cindex Cursor) cursor
+                                    ^type empty-ctype]
   "Handle variables, structs, unions, packed attrs, etc... in a ctype."
 
   (setv fields-to-add []
@@ -169,6 +169,7 @@
                                 PACKED_ATTR))
            (setv pack-value 1)]
 
+          ;; TODO: Use handle-struct-declaration and handle-union-deceleration
           [(in (. child kind) [(. clang
                                   cindex
                                   CursorKind
@@ -189,7 +190,7 @@
                                                     (. ctypes
                                                        Structure))])
                                         (dict)))
-               (handle-ctype-declarations scope
+               (handle-type-declaration-body scope
                                           child
                                           nested-ctype)
                (.append nested-types-to-add nested-type-name)
@@ -229,21 +230,21 @@
   (assoc (. scope types) type-name ctype) ;; Add refrence to table
 
   ;; Create body
-  (handle-ctype-declarations scope cursor ctype))
+  (handle-type-declaration-body scope cursor ctype))
 
-(defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
+(defn handle-struct-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (add-type-with-feilds (. clang cindex CursorKind STRUCT_DECL)
                         (. ctypes Structure)
                         scope
                         cursor))
 
-(defn add-union [^CInterface scope ^(. clang cindex Cursor) cursor]
+(defn handle-union-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (add-type-with-feilds (. clang cindex CursorKind UNION_DECL)
                         (. ctypes Union)
                         scope
                         cursor))
 
-(defn add-enum [^CInterface scope ^(. clang cindex Cursor) cursor]
+(defn handle-enum-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
              (. clang cindex CursorKind ENUM_DECL)))
   (setv enum-name (-> (. cursor type spelling)
@@ -262,13 +263,13 @@
                             (.get_children cursor))
                        list))))
 
-(defn add-var [^CInterface scope ^(. clang cindex Cursor) cursor]
+(defn handle-var-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
              (. clang cindex CursorKind VAR_DECL)))
   (setv var-type (get-type-or-create-variant scope (. cursor type)))
   (assoc (. scope symbols) (. cursor spelling) var-type))
 
-(defn add-function [^CInterface scope ^(. clang cindex Cursor) cursor]
+(defn handle-function-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   ;; TODO: Handle stdcall
   ;; TODO: Handle "..."
   (assert (= (. cursor kind)
@@ -283,15 +284,15 @@
                                   unpack-iterable)))
   (assoc (. scope symbols) (. cursor spelling) function))
 
-(defn handle-decleration [^CInterface scope ^(. clang cindex Cursor) cursor]
+(defn handle-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   ;; Use a macro?
   (assert (.is_declaration (. cursor kind)))
-  (cond [(= (. cursor kind) (. clang cindex CursorKind TYPEDEF_DECL)) (add-typedef scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind STRUCT_DECL)) (add-struct scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind UNION_DECL)) (add-union scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind ENUM_DECL)) (add-enum scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind VAR_DECL)) (add-var scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind FUNCTION_DECL)) (add-function scope cursor)]
+  (cond [(= (. cursor kind) (. clang cindex CursorKind TYPEDEF_DECL)) (handle-typedef-deceleration scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind STRUCT_DECL)) (handle-struct-deceleration scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind UNION_DECL)) (handle-union-deceleration scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind ENUM_DECL)) (handle-enum-deceleration scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind VAR_DECL)) (handle-var-deceleration scope cursor)]
+        [(= (. cursor kind) (. clang cindex CursorKind FUNCTION_DECL)) (handle-function-deceleration scope cursor)]
         [True (raise (NotImplementedError (. cursor kind)))]))
 
 (defn handle-translation-unit [^CInterface scope
@@ -299,7 +300,7 @@
   (assert (= (. cursor kind)
              (. clang cindex CursorKind TRANSLATION_UNIT)))
   (for [child (.get_children cursor)]
-      (handle-decleration scope child)))
+      (handle-deceleration scope child)))
 
 (defn parse-header ^CInterface [^(. pathlib Path) header]
   "Create a CInterface instance from a given header file."
