@@ -52,4 +52,6 @@
          ;; TODO: Applying POINTER onto a CFUCNTYPE is necessary?
          ((.POINTER ctypes value))
          (setattr dll key)))
+  (for [[key value] (.items (. interface enum-consts))]
+    (setattr dll key value))
   dll)

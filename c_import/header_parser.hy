@@ -1,19 +1,17 @@
 (import ctypes
         pathlib
-        enum
         clang.cindex
         [typing [Dict Callable Tuple NamedTuple Union Optional
                  Sequence]])
 
-(setv OptionalPointerWrapper (of Optional (of Callable [int] object))
-      TypeTable (of Dict str (of Union
-                                 OptionalPointerWrapper
-                                 (. enum IntEnum)))
-      SymbolTable (of Dict str OptionalPointerWrapper))
+(setv TypeTable (of Dict str type)
+      SymbolTable (of Dict str object)
+      EnumConstTable (of Dict str int))
 
 (defclass CInterface [NamedTuple]
   (setv ^TypeTable types (dict)
-        ^SymbolTable symbols (dict)))
+        ^SymbolTable symbols (dict)
+        ^EnumConstTable enum-consts (dict)))
 
 (defn remove-qualifiers-and-specifiers [name]
   (->> name
@@ -40,9 +38,8 @@
       (-> (. clang-type spelling)
           remove-qualifiers-and-specifiers)))
 
-(defn get-type-or-create-variant ^OptionalPointerWrapper [^CInterface scope
-                                                          ^(. clang cindex Type) clang-type
-                                                          &optional [keep-enum False]]
+(defn get-type-or-create-variant [^CInterface scope
+                                  ^(. clang cindex Type) clang-type]
   ;; TODO: Handle anonymous and opaque types
   (assert (. clang-type spelling))
   ;; TODO: Use macro for kind switch?
@@ -123,16 +120,10 @@
              (get (. scope types) type-id))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind ELABORATED))
-         (do (setv type-id (unique-type-name clang-type)
-                   existing-type (get (. scope types) type-id))
-             (if (and existing-type
-                      (not keep-enum)
-                      (issubclass existing-type (. enum IntEnum)))
-                 (. ctypes c_int)
-                 existing-type))]
+         (do (setv type-id (unique-type-name clang-type))
+             (get (. scope types) type-id))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind ENUM))
-         ;; TODO: respect "keep-enum"
          (. ctypes c_int)]
 
         [True (raise (NotImplementedError (. clang-type kind)))]))
@@ -143,8 +134,7 @@
   (assoc (. scope types)
          (. cursor spelling)
          (get-type-or-create-variant scope
-                                     (. cursor underlying_typedef_type)
-                                     :keep-enum True)))
+                                     (. cursor underlying_typedef_type))))
 
 (defn handle-type-declaration-body [^CInterface scope
                                     ^(. clang cindex Cursor) cursor
@@ -259,17 +249,16 @@
   (setv enum-name (unique-type-name (. cursor type)))
   (assoc (. scope types)
          enum-name
-         (.IntEnum enum
-                   enum-name
-                   ;; Enum fields
-                   (-> (map (fn [c] (do (assert (= (. clang
-                                                      cindex
-                                                      CursorKind
-                                                      ENUM_CONSTANT_DECL)
-                                                   (. c kind)))
-                                        (. c spelling)))
-                            (.get_children cursor))
-                       list))))
+         (. ctypes c_int))
+  (for [c (.get_children cursor)]
+    (do (assert (= (. clang
+                      cindex
+                      CursorKind
+                      ENUM_CONSTANT_DECL)
+                   (. c kind)))
+        (assoc (. scope enum-consts)
+               (. c spelling)
+               (. c enum_value)))))
 
 (defn handle-var-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
@@ -313,7 +302,8 @@
 (defn parse-header ^CInterface [^(. pathlib Path) header]
   "Create a CInterface instance from a given header file."
   (setv scope (CInterface :types (dict)
-                          :symbols (dict))
+                          :symbols (dict)
+                          :enum-consts (dict))
         index ((. clang cindex Index create))
         tu ((. index parse) header)
         cursor (. tu cursor))

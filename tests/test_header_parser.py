@@ -1,6 +1,5 @@
 import ctypes
 import c_import
-import enum
 import typing
 
 import pytest
@@ -12,9 +11,6 @@ def types_are_equivalent(a, b) -> bool:
 
     if a is None:
         return a == b
-
-    if issubclass(a, enum.Enum):
-        return a.__members__ == b.__members__
 
     if issubclass(a, ctypes._Pointer):
         while issubclass(a, ctypes._Pointer):
@@ -98,7 +94,7 @@ pointer_typedefs_types = {
     'void_ptr': ctypes.c_void_p,
     's': type('s', (ctypes.Structure,), {}),
     'u': type('u', (ctypes.Union,), {}),
-    'e': enum.IntEnum('e', []),
+    'e': ctypes.c_int,
     'e_ptr': ctypes.POINTER(ctypes.c_int)
 }
 pointer_typedefs_types['s_ptr'] = ctypes.POINTER(
@@ -183,7 +179,7 @@ unions_and_symbols_symbols = {
     ),
 }
 enums_and_symbols_types = {
-    'e': enum.IntEnum('e', ['A', 'B', 'C']),
+    'e': ctypes.c_int,
 }
 enums_and_symbols_symbols = {
     'global1': ctypes.c_int,
@@ -220,7 +216,8 @@ test_header_cases = (
         (
             '',
             {},
-            {}
+            {},
+            {},
         ),
 
         # basic type symbols
@@ -422,7 +419,8 @@ test_header_cases = (
                 'foo14': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
                 'foo15': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
                 'foo16': ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_double)),
-            }
+            },
+            {},
         ),
 
         # basic typedef
@@ -437,6 +435,7 @@ thing my_thing;
             {
                 'my_thing': ctypes.c_int,
             },
+            {},
         ),
 
         # empty struct
@@ -449,6 +448,7 @@ thing my_thing;
                     {}
                 ),
             },
+            {},
             {},
         ),
 
@@ -469,6 +469,7 @@ struct thing {
                 ),
             },
             {},
+            {},
         ),
 
 
@@ -478,7 +479,8 @@ struct thing {
             {
                 'x': type('x', (ctypes.Union,), {})
             },
-            {}
+            {},
+            {},
         ),
 
         # basic union
@@ -501,7 +503,8 @@ union x {
                     }
                 ),
             },
-            {}
+            {},
+            {},
         ),
 
         # Void typedef
@@ -514,10 +517,11 @@ typedef my_type *my_type_pointer;
                 'my_type': None,
                 'my_type_pointer': ctypes.c_void_p,
             },
-            {}
+            {},
+            {},
         ),
 
-        # enum
+        # basic enum
         (
 '''
 enum thing {
@@ -527,9 +531,14 @@ enum thing {
 };
 ''',
             {
-                'thing': enum.IntEnum('thing', ('A', 'B', 'C')),
+                'thing': ctypes.c_int,
             },
-            {}
+            {},
+            {
+                'A': 0,
+                'B': 1,
+                'C': 2,
+            },
         ),
 
         # Functions with enums
@@ -553,15 +562,23 @@ other_thing func3(void);
 void func4(other_thing x);
 ''',
             {
-                'thing': enum.IntEnum('thing', ('A', 'B', 'C')),
-                'other_thing': enum.IntEnum('other_thing', ('H', 'I', 'J')),
+                'thing': ctypes.c_int,
+                'other_thing': ctypes.c_int,
             },
             {
                 'func1': ctypes.CFUNCTYPE(ctypes.c_int),
                 'func2': ctypes.CFUNCTYPE(None, ctypes.c_int),
                 'func3': ctypes.CFUNCTYPE(ctypes.c_int),
                 'func4': ctypes.CFUNCTYPE(None, ctypes.c_int),
-            }
+            },
+            {
+                'A': 0,
+                'B': 1,
+                'C': 2,
+                'H': 0,
+                'I': 1,
+                'J': 2,
+            },
         ),
 
         # Typedef for anon stuff
@@ -603,9 +620,13 @@ typedef enum {
                         ],
                     },
                 ),
-                'my_enum_e': enum.IntEnum('my_enum_e', ['X', 'Y']),
+                'my_enum_e': ctypes.c_int,
             },
-            {}
+            {},
+            {
+                'X': 0,
+                'Y': 1,
+            },
         ),
 
         # pointer typedefs
@@ -626,6 +647,7 @@ typedef enum e* e_ptr;
 ''',
             pointer_typedefs_types.copy(),
             {},
+            {},
         ),
 
         # opaque type
@@ -643,6 +665,7 @@ struct thing2 {
 ''',
             opaque_types_types.copy(),
             {},
+            {},
         ),
 
         # typedef of function pointer
@@ -658,7 +681,8 @@ typedef float (*callback_t)(int, float, void*);
                     ctypes.c_void_p
                 )),
             },
-            {}
+            {},
+            {},
         ),
 
         # struct with bitfields
@@ -679,7 +703,8 @@ struct s {
                     ],
                 })
             },
-            {}
+            {},
+            {},
         ),
 
         # packed structs
@@ -703,7 +728,8 @@ struct s {
                     ],
                 }),
             },
-            {}
+            {},
+            {},
         ),
 
         # Structs and symbols
@@ -733,7 +759,8 @@ struct opaque_thing* foo8(void);
 struct opaque_thing* foo9(struct opaque_thing* x);
 ''',
             structs_and_symbols_types,
-            structs_and_symbols_symbols
+            structs_and_symbols_symbols,
+            {},
         ),
 
         # Union and symbols
@@ -757,6 +784,7 @@ union u* foo6(union u* x);
 ''',
             unions_and_symbols_types,
             unions_and_symbols_symbols,
+            {},
         ),
 
         # Enums and symbols
@@ -781,6 +809,11 @@ enum e* foo6(enum e* x);
 ''',
             enums_and_symbols_types,
             enums_and_symbols_symbols,
+            {
+                'A': 0,
+                'B': 1,
+                'C': 2,
+            },
         ),
 
         # Opaque enum
@@ -795,10 +828,15 @@ enum e2 {
 };
 ''',
             {
-                'e': enum.IntEnum('e', []),
-                'e2': enum.IntEnum('e2', ['A', 'B', 'C']),
+                'e': ctypes.c_int,
+                'e2': ctypes.c_int,
             },
-            {}
+            {},
+            {
+                'A': 0,
+                'B': 1,
+                'C': 2,
+            },
         ),
 
         # Opaque union
@@ -813,7 +851,8 @@ union u2 {
 };
 ''',
             opaque_unions_types,
-            {}
+            {},
+            {},
         ),
 
         # sizeof usage
@@ -826,7 +865,8 @@ char b[sizeof(a)];
             {
                 'a': ctypes.c_double,
                 'b': ctypes.ARRAY(ctypes.c_char, ctypes.sizeof(ctypes.c_double)),
-            }
+            },
+            {},
         ),
     ),
     (
@@ -855,18 +895,19 @@ char b[sizeof(a)];
     )
 )
 @pytest.mark.parametrize(
-    'header_content,expected_types,expected_symbols',
+    'header_content,expected_types,expected_symbols,expected_enum_consts',
     test_header_cases[0],
     ids=test_header_cases[1])
 def test_header(tmpdir,
                 header_content: str,
                 expected_types,
-                expected_symbols
+                expected_symbols,
+                expected_enum_consts,
 ):
 
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, symbols = c_import.header_parser.parse_header(header)
+    types, symbols, enum_consts = c_import.header_parser.parse_header(header)
 
     # Test types
     assert set(types.keys()) == set(expected_types.keys())
@@ -878,6 +919,8 @@ def test_header(tmpdir,
     for (key, value) in symbols.items():
         assert types_are_equivalent(value, expected_symbols[key])
 
+    assert enum_consts == expected_enum_consts
+
 def test_struct_with_self_reference(tmpdir):
     header_content = '''
 struct node;
@@ -887,7 +930,7 @@ struct node {
 '''
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, _ = c_import.header_parser.parse_header(header)
+    types, _, _ = c_import.header_parser.parse_header(header)
     assert 'node' in types
     assert issubclass(types['node'], ctypes.Structure)
     assert types['node']._fields_[0][0] == 'next'
@@ -899,7 +942,7 @@ def test_builtin_record(tmpdir):
     header_content = 'typedef __builtin_va_list thingy;'
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, _ = c_import.header_parser.parse_header(header)
+    types, _, _ = c_import.header_parser.parse_header(header)
     assert 'thingy' in types
     assert types['thingy'] is not None
     assert any(issubclass(types['thingy'], x) for x in (
@@ -938,7 +981,7 @@ union u {
 '''
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, _ = c_import.header_parser.parse_header(header)
+    types, _, _ = c_import.header_parser.parse_header(header)
 
     assert 's' in types
     assert issubclass(types['s'], ctypes.Structure)
@@ -991,7 +1034,7 @@ union u {
 '''
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, _ = c_import.header_parser.parse_header(header)
+    types, _, _ = c_import.header_parser.parse_header(header)
 
     assert 'other_type' in types
     class other_type(ctypes.Structure):
@@ -1081,7 +1124,7 @@ enum {
 '''
     header = tmpdir / 'header.h'
     header.write(header_content)
-    _, symbols = c_import.header_parser.parse_header(header)
+    _, symbols, _ = c_import.header_parser.parse_header(header)
     for i in range(1,10):
         assert f'g{i}' in symbols
 
@@ -1126,6 +1169,3 @@ enum {
     assert symbols['g7'] == ctypes.c_int
     assert symbols['g8'] == ctypes.c_int
     assert symbols['g9'] == ctypes.POINTER(ctypes.c_int)
-
-
-# TODO: Anonymous enum (without any symbols bounded to it)
