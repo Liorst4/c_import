@@ -132,6 +132,10 @@
                  (. ctypes c_int)
                  existing-type))]
 
+        [(= (. clang-type kind) (. clang cindex TypeKind ENUM))
+         ;; TODO: respect "keep-enum"
+         (. ctypes c_int)]
+
         [True (raise (NotImplementedError (. clang-type kind)))]))
 
 (defn handle-typedef-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]

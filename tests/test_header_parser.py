@@ -541,15 +541,26 @@ enum thing {
    C,
 };
 
+typedef enum {
+    H,
+    I,
+    J
+} other_thing;
+
 enum thing func1(void);
 void func2(enum thing argument);
+other_thing func3(void);
+void func4(other_thing x);
 ''',
             {
                 'thing': enum.IntEnum('thing', ('A', 'B', 'C')),
+                'other_thing': enum.IntEnum('other_thing', ('H', 'I', 'J')),
             },
             {
                 'func1': ctypes.CFUNCTYPE(ctypes.c_int),
                 'func2': ctypes.CFUNCTYPE(None, ctypes.c_int),
+                'func3': ctypes.CFUNCTYPE(ctypes.c_int),
+                'func4': ctypes.CFUNCTYPE(None, ctypes.c_int),
             }
         ),
 
