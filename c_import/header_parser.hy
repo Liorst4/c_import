@@ -204,7 +204,11 @@
   (when pack-value
     (setv (. empty-ctype _pack_) pack-value))
   (when anon-types-to-add
-    (setv (. empty-ctype _anonymous_) anon-types-to-add))
+    (do (for [t (map (fn [x] (get (. scope types ) x))
+                     anon-types-to-add)]
+              (unless (hasattr t "_fields_")
+                (setattr t "_fields_" [])))
+      (setv (. empty-ctype _anonymous_) anon-types-to-add)))
   (when fields-to-add
     (setv (. empty-ctype _fields_) fields-to-add)))
 
