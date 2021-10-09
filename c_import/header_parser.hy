@@ -1,10 +1,9 @@
 (import ctypes
         pathlib
         enum
+        clang.cindex
         [typing [Dict Callable Tuple NamedTuple Union Optional
                  Sequence]])
-
-(import clang.cindex)
 
 (setv OptionalPointerWrapper (of Optional (of Callable [int] object))
       TypeTable (of Dict str (of Union
