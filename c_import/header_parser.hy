@@ -27,6 +27,20 @@
                                    "restrict"]))))
        (.join " ")))
 
+(defn unique-type-name ^str [^(. clang cindex Type) clang-type]
+  "Generate the name of the ctype type"
+  (if (-> clang-type
+          .get_declaration
+          .is_anonymous)
+      (-> clang-type
+          (.get_canonical)
+          ((fn [x] (. x spelling)))
+          (hash)
+          (abs) ;; TODO: Could cause collisions?
+          (hex))
+      (-> (. clang-type spelling)
+          remove-qualifiers-and-specifiers)))
+
 (defn get-type-or-create-variant ^OptionalPointerWrapper [^CInterface scope
                                                           ^(. clang cindex Type) clang-type
                                                           &optional [keep-enum False]]
@@ -104,22 +118,19 @@
          (raise (ValueError))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind RECORD))
-         (do (setv type-id (->> (. clang-type spelling)
-                                (remove-qualifiers-and-specifiers)))
+         (do (setv type-id (unique-type-name clang-type))
              (unless (in type-id (. scope types))
                (handle-struct-deceleration scope (.get_declaration clang-type)))
              (get (. scope types) type-id))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind ELABORATED))
-         (do
-                (setv type-id (->> (. clang-type spelling)
-                                   (remove-qualifiers-and-specifiers))
-                      existing-type (get (. scope types) type-id))
-                (if (and existing-type
-                         (not keep-enum)
-                         (issubclass existing-type (. enum IntEnum)))
-                    (. ctypes c_int)
-                    existing-type))]
+         (do (setv type-id (unique-type-name clang-type)
+                   existing-type (get (. scope types) type-id))
+             (if (and existing-type
+                      (not keep-enum)
+                      (issubclass existing-type (. enum IntEnum)))
+                 (. ctypes c_int)
+                 existing-type))]
 
         [True (raise (NotImplementedError (. clang-type kind)))]))
 
@@ -139,7 +150,7 @@
 
   (setv fields-to-add []
         pack-value None
-        nested-types-to-add [])
+        anon-types-to-add [])
 
   (for [child (.get_children cursor)]
     (cond [(= (. child kind) (. clang
@@ -148,18 +159,19 @@
                                 FIELD_DECL))
            (.append fields-to-add
                     (do (setv field [(. child spelling)
-                                     (if (-> (. child type)
-                                             .get_declaration
-                                             .is_anonymous)
-                                         ;; TODO: Pointer arrays etc
-                                         (raise NotImplementedError)
-                                         (get-type-or-create-variant
-                                           scope
-                                           (. child type)))])
+                                     (get-type-or-create-variant
+                                       scope
+                                       (. child type))])
 
                         (when (.is_bitfield child)
                           (.append field (.get_bitfield_width
                                            child)))
+
+                        ;; If its bounded to a field, than its not suppose to be in _anonymous_
+                        (do (setv field-type-name (. (get field 1) __name__))
+                            (when (in field-type-name anon-types-to-add)
+                              (.remove anon-types-to-add field-type-name)))
+
                         (tuple field)))]
 
           ;; TODO: Move to another function?
@@ -169,40 +181,30 @@
                                 PACKED_ATTR))
            (setv pack-value 1)]
 
-          ;; TODO: Use handle-struct-declaration and handle-union-deceleration
-          [(in (. child kind) [(. clang
-                                  cindex
-                                  CursorKind
-                                  UNION_DECL)
-                               (. clang
-                                  cindex
-                                  CursorKind
-                                  STRUCT_DECL)])
-           (do (setv nested-type-name (str (hash (str child)))
-                     nested-ctype (type ""
-                                        (tuple [(if (= (. child
-                                                          kind)
-                                                       (. clang
-                                                          cindex
-                                                          CursorKind
-                                                          UNION_DECL))
-                                                    (. ctypes Union)
-                                                    (. ctypes
-                                                       Structure))])
-                                        (dict)))
-               (handle-type-declaration-body scope
-                                          child
-                                          nested-ctype)
-               (.append nested-types-to-add nested-type-name)
-               (.append fields-to-add (tuple [nested-type-name
-                                              nested-ctype])))]
+          ;; TODO: Macro for those two
+          [(= (. child kind) (. clang cindex CursorKind STRUCT_DECL))
+           (do (setv nested-ctype-name (unique-type-name (. child type)))
+               (unless (in nested-ctype-name (. scope types))
+                 (do (setv nested-ctype (handle-struct-deceleration scope
+                                                                    child))
+                     (.append anon-types-to-add nested-ctype-name)
+                     (.append fields-to-add (tuple [nested-ctype-name
+                                                    nested-ctype])))))]
 
+          [(= (. child kind) (. clang cindex CursorKind UNION_DECL))
+           (do (setv nested-ctype-name (unique-type-name (. child type)))
+               (unless (in nested-ctype-name (. scope types))
+                 (do (setv nested-ctype (handle-union-deceleration scope
+                                                                   child))
+                     (.append anon-types-to-add nested-ctype-name)
+                     (.append fields-to-add (tuple [nested-ctype-name
+                                                    nested-ctype])))))]
           [True (raise (NotImplementedError (. child kind)))]))
 
   (when pack-value
     (setv (. empty-ctype _pack_) pack-value))
-  (when nested-types-to-add
-    (setv (. empty-ctype _anonymous_) nested-types-to-add))
+  (when anon-types-to-add
+    (setv (. empty-ctype _anonymous_) anon-types-to-add))
   (when fields-to-add
     (setv (. empty-ctype _fields_) fields-to-add)))
 
@@ -212,9 +214,7 @@
                             ^(. clang cindex Cursor) cursor]
   "Add (or expand in the case of a forward decleration) a ctype with fields to a scope"
   (assert (= (. cursor kind) expected-cursor-kind))
-  (setv type-name (-> (. cursor type spelling)
-                        remove-qualifiers-and-specifiers)
-
+  (setv type-name (unique-type-name (. cursor type))
         ctype (if (in type-name (. scope types))
 
                   ;; Get a forward decleration reference
@@ -227,10 +227,12 @@
                         (tuple [ctypes-type])
                         (dict))))
 
+  (assert (not (in " " type-name)))
   (assoc (. scope types) type-name ctype) ;; Add refrence to table
 
   ;; Create body
-  (handle-type-declaration-body scope cursor ctype))
+  (handle-type-declaration-body scope cursor ctype)
+  ctype)
 
 (defn handle-struct-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (add-type-with-feilds (. clang cindex CursorKind STRUCT_DECL)
@@ -247,8 +249,7 @@
 (defn handle-enum-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
              (. clang cindex CursorKind ENUM_DECL)))
-  (setv enum-name (-> (. cursor type spelling)
-                      remove-qualifiers-and-specifiers))
+  (setv enum-name (unique-type-name (. cursor type)))
   (assoc (. scope types)
          enum-name
          (.IntEnum enum
