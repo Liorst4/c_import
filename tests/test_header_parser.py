@@ -962,7 +962,7 @@ struct s {
     struct {
         float f;
         double d;
-    } c, *d, e[10];
+    } *d, e[10], c;
 };
 
 union u {
@@ -975,7 +975,7 @@ union u {
     struct {
         float f;
         double d;
-    } c, *d, e[10];
+    } *d, e[10], c;
 };
 '''
     header = tmpdir / 'header.h'
