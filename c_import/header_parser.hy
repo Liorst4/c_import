@@ -132,74 +132,78 @@
                                      (. cursor underlying_typedef_type)
                                      :keep-enum True)))
 
-(defn create-fields [^CInterface scope
-                     ^(of Sequence (. clang cindex Cursor)) fields
-                     ^type cls]
-  (setv tmp-fields []
-        tmp-pack None
-        tmp-anon [])
+(defn handle-ctype-declarations [^CInterface scope
+                                 ^(. clang cindex Cursor) cursor
+                                 ^type empty-ctype]
+  "Handle variables, structs, unions, packed attrs, etc... in a ctype."
 
-  (for [field-cursor fields]
-    (cond [(= (. field-cursor kind) (. clang
-                                       cindex
-                                       CursorKind
-                                       FIELD_DECL))
-           (.append tmp-fields
-                    (do (setv field [(. field-cursor spelling)
-                                     (if (-> (. field-cursor type)
+  (setv fields-to-add []
+        pack-value None
+        nested-types-to-add [])
+
+  (for [child (.get_children cursor)]
+    (cond [(= (. child kind) (. clang
+                                cindex
+                                CursorKind
+                                FIELD_DECL))
+           (.append fields-to-add
+                    (do (setv field [(. child spelling)
+                                     (if (-> (. child type)
                                              .get_declaration
                                              .is_anonymous)
                                          ;; TODO: Pointer arrays etc
                                          (raise NotImplementedError)
                                          (get-type-or-create-variant
                                            scope
-                                           (. field-cursor type)))])
+                                           (. child type)))])
 
-                        (when (.is_bitfield field-cursor)
+                        (when (.is_bitfield child)
                           (.append field (.get_bitfield_width
-                                           field-cursor)))
+                                           child)))
                         (tuple field)))]
 
-          [(= (. field-cursor kind) (. clang
-                                       cindex
-                                       CursorKind
-                                       PACKED_ATTR))
-           (setv tmp-pack 1)]
+          ;; TODO: Move to another function?
+          [(= (. child kind) (. clang
+                                cindex
+                                CursorKind
+                                PACKED_ATTR))
+           (setv pack-value 1)]
 
-          [(in (. field-cursor kind) [(. clang
-                                         cindex
-                                         CursorKind
-                                         UNION_DECL)
-                                      (. clang
-                                         cindex
-                                         CursorKind
-                                         STRUCT_DECL)])
-           (do (setv field-name (str (hash (str field-cursor)))
-                     field-type (type ""
-                                      (tuple [(if (= (. field-cursor
-                                                        kind)
-                                                     (. clang
-                                                        cindex
-                                                        CursorKind
-                                                        UNION_DECL))
-                                                  (. ctypes Union)
-                                                  (. ctypes
-                                                     Structure))])
-                                      (dict)))
-               (create-fields scope
-                              (.get_children field-cursor)
-                              field-type)
-               (.append tmp-anon field-name)
-               (.append tmp-fields (tuple [field-name field-type])))]
+          [(in (. child kind) [(. clang
+                                  cindex
+                                  CursorKind
+                                  UNION_DECL)
+                               (. clang
+                                  cindex
+                                  CursorKind
+                                  STRUCT_DECL)])
+           (do (setv nested-type-name (str (hash (str child)))
+                     nested-ctype (type ""
+                                        (tuple [(if (= (. child
+                                                          kind)
+                                                       (. clang
+                                                          cindex
+                                                          CursorKind
+                                                          UNION_DECL))
+                                                    (. ctypes Union)
+                                                    (. ctypes
+                                                       Structure))])
+                                        (dict)))
+               (handle-ctype-declarations scope
+                                          child
+                                          nested-ctype)
+               (.append nested-types-to-add nested-type-name)
+               (.append fields-to-add (tuple [nested-type-name
+                                              nested-ctype])))]
 
-          [True (raise (NotImplementedError (. field-cursor kind)))]))
+          [True (raise (NotImplementedError (. child kind)))]))
 
-  (when tmp-pack
-    (setv (. cls _pack_) tmp-pack))
-  (when tmp-anon
-    (setv (. cls _anonymous_) tmp-anon))
-  (when tmp-fields
-    (setv (. cls _fields_) tmp-fields)))
+  (when pack-value
+    (setv (. empty-ctype _pack_) pack-value))
+  (when nested-types-to-add
+    (setv (. empty-ctype _anonymous_) nested-types-to-add))
+  (when fields-to-add
+    (setv (. empty-ctype _fields_) fields-to-add)))
 
 (defn add-type-with-feilds [expected-cursor-kind
                             ctypes-type
@@ -225,7 +229,7 @@
   (assoc (. scope types) type-name ctype) ;; Add refrence to table
 
   ;; Create body
-  (create-fields scope (.get_children cursor) ctype))
+  (handle-ctype-declarations scope cursor ctype))
 
 (defn add-struct [^CInterface scope ^(. clang cindex Cursor) cursor]
   (add-type-with-feilds (. clang cindex CursorKind STRUCT_DECL)
