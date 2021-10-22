@@ -7,7 +7,8 @@ import contextlib
 def libc():
     return c_import.loader.load("libc.so.6", ["stdlib.h",
                                               "stdio.h",
-                                              "math.h"])
+                                              "math.h",
+                                              "string.h"])
 
 def test_stream_globals(libc):
     assert libc.stdin
@@ -16,8 +17,6 @@ def test_stream_globals(libc):
     assert libc.fileno(libc.stderr) == 2
 
 def test_malloc(libc):
-    pytest.skip("Crashing pytest for some reason")
-
     @contextlib.contextmanager
     def malloc(size):
         new_address = libc.malloc(size)

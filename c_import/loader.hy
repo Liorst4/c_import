@@ -48,12 +48,10 @@
                                 (parse-header (. combined-header name))))))
 
   (defn __getitem__ [self item]
-    (if (in item self._interface.symbols)
-        (do (setv ctype (get self._interface.symbols item))
-            (if (issubclass ctype _ctypes.CFuncPtr)
-                (ctype (tuple [item self]))
-                (.in_dll ctype self item)))
-        ((. (super) __getitem__) item))))
+    (setv ctype (get self._interface.symbols item))
+    (if (issubclass ctype _ctypes.CFuncPtr)
+        (ctype (tuple [item self]))
+        (.in_dll ctype self item))))
 
 ;; TODO: Delete?
 (setv load CDLLX)
