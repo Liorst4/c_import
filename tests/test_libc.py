@@ -36,3 +36,15 @@ def test_numerics(libc):
     div_res = libc.div(34, 4)
     assert div_res.quot == 8
     assert div_res.rem == 2
+
+
+def test_file_write(libc, tmp_path):
+    f = tmp_path / "File.txt"
+    fstream = libc.fopen(str(f).encode(), b"w+")
+    text = ctypes.create_string_buffer(b"Hello world")
+    libc.fwrite(text, len(text), 1, fstream)
+    libc.fflush(fstream)
+    libc.fclose(fstream)
+
+    with open(f, "rb") as pyfile:
+        assert pyfile.read() == text.raw
