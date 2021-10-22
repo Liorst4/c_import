@@ -55,6 +55,8 @@
                    (.in_dll ctype self item)))]
           [(in item self._interface.enum-consts)
            (get self._interface.enum-consts item)]
+          [(in item self._interface.types)
+           (get self._interface.types item)]
           [True (raise KeyError)])))
 
 
