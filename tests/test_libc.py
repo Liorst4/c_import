@@ -47,3 +47,23 @@ def test_file_write(libc, tmp_path):
 
     with open(f, "rb") as pyfile:
         assert pyfile.read() == text.raw
+
+def test_number_conversions(libc):
+    assert libc.atoi(b"-3") == -3
+    assert libc.atol(b"-1048576") == -1048576
+    assert libc.atoll(b"-1099511627776") == -1099511627776
+    assert libc.atof(b"1.0003") == 1.0003
+
+    endptr = ctypes.POINTER(ctypes.c_char)()
+    assert libc.strtod(b"-1.324", ctypes.pointer(endptr)) == -1.324
+    assert libc.strtof(b"-0.9", ctypes.pointer(endptr)) - -0.9 < 0.001
+    assert libc.strtold(b"-1.324", ctypes.pointer(endptr)) == -1.324
+
+    assert libc.strtol(b"1324", ctypes.pointer(endptr), 10) == 1324
+    assert libc.strtoll(b"1324", ctypes.pointer(endptr), 10) == 1324
+
+    assert libc.strtoul(b"1324", ctypes.pointer(endptr), 10) == 1324
+    assert libc.strtoull(b"1324", ctypes.pointer(endptr), 10) == 1324
+
+    # TODO: Check endptr
+
