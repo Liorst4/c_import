@@ -49,12 +49,10 @@
 
   (defn __getitem__ [self item]
     (if (in item self._interface.symbols)
-        (do (setv symbol-address (_ctypes.dlsym self._handle item)
-                  ctype (get self._interface.symbols item)
-                  ref-constructor (cond [(issubclass ctype _ctypes.CFuncPtr) ctype]
-                                        [(issubclass ctype _ctypes._Pointer) (fn [x] ((. ctype from_address) x))]
-                                        [True (fn [x] ((. (.POINTER ctypes ctype) from_address) x))]))
-            (ref-constructor symbol-address))
+        (do (setv ctype (get self._interface.symbols item))
+            (if (issubclass ctype _ctypes.CFuncPtr)
+                (ctype (tuple [item self]))
+                (.in_dll ctype self item)))
         ((. (super) __getitem__) item))))
 
 ;; TODO: Delete?
