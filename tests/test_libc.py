@@ -67,3 +67,24 @@ def test_number_conversions(libc):
 
     # TODO: Check endptr
 
+
+def test_scanf(libc):
+    a = ctypes.c_uint()
+    b = ctypes.c_char()
+    c = ctypes.c_int()
+    d = ctypes.c_float()
+
+    scan_result = libc.sscanf(
+        b"1 e -7 3.4",
+        b"%u %c %d %f",
+        ctypes.pointer(a),
+        ctypes.pointer(b),
+        ctypes.pointer(c),
+        ctypes.pointer(d),
+    )
+
+    assert scan_result == 4
+    assert a.value == 1
+    assert b.value == b'e'
+    assert c.value == -7
+    assert abs(d.value - 3.4) < 0.01

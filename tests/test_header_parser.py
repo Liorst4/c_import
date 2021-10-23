@@ -316,6 +316,8 @@ test_header_cases = (
     char const* foo15(void);
 
     void foo16(double arg[]);
+
+    void foo17(int x, ...);
 ''',
             {
             },
@@ -419,6 +421,7 @@ test_header_cases = (
                 'foo14': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
                 'foo15': ctypes.CFUNCTYPE(ctypes.POINTER(ctypes.c_char)),
                 'foo16': ctypes.CFUNCTYPE(None, ctypes.POINTER(ctypes.c_double)),
+                'foo17': ctypes.CFUNCTYPE(None, ctypes.c_int),
             },
             {},
         ),

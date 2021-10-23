@@ -60,7 +60,7 @@ Create C bindings for python automatically with the help of libclang.
 *** DONE Typedefs to anonymous types.
 *** DONE Nested anonymous types.
 *** DONE "Packed" attribute
-*** TODO Variadic arguments
+*** DONE Variadic arguments
 *** TODO Non cdecl functions (Important for Win32API)
 *** TODO Pre-processor constant integer expressions
     Their declarations are not preserved after the pre-processing.

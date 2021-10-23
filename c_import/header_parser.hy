@@ -268,7 +268,6 @@
 
 (defn handle-function-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   ;; TODO: Handle stdcall
-  ;; TODO: Handle "..."
   (assert (= (. cursor kind)
              (. clang cindex CursorKind FUNCTION_DECL)))
   (setv function (.CFUNCTYPE ctypes
