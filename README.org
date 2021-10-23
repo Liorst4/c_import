@@ -1,0 +1,76 @@
+#+title: Python C Import
+
+Dynamic library + header + ctypes = Module like object!
+
+Create C bindings for python automatically with the help of libclang. 
+
+* Examples
+  #+begin_src python
+    from c_import import loader
+    import ctypes
+
+    libc = loader.load("libc.so.6", ["stdio.h", "stdint.h", "math.h", "stdlib.h", "string.h", "time.h"])
+
+    filestream = libc.fopen(b"/tmp/x", b"rw+")
+    text = ctypes.create_string_buffer(b"Hello world")
+    libc.fwrite(text, len(text), 1, fstream)
+    libc.fflush(fstream)
+    libc.fclose(fstream)
+
+    libc.fileno(libc.stdin)
+    # 1
+
+    libc.fputc(ord('A'), libc.stdout)
+    libc.fflush(libc.stdout)
+    # A
+
+    libc.abs(-1)
+    # 1
+
+    x = libc.div(49, 8)
+    x.quot # 6
+    x.rem  # 1
+
+    # Abort the process
+    libc.abort()
+  #+end_src
+
+* How does that work
+** The loader calls the c pre-processor to resolve any "include"s and "define"s.
+** The resulting header is processed by libclang
+** The header parser module converts the parsed header into ctype types.
+** The loader wraps symbols with their python ctype.
+
+* Features
+** Syntax parsing
+*** DONE Basic C types
+*** DONE Functions
+*** DONE Pointers
+*** DONE Arrays
+*** DONE Structs
+*** DONE Unions
+*** DONE Enums
+*** DONE Typedefs
+*** DONE Globals
+*** DONE Bitfields
+*** DONE Forward declarations
+*** DONE Anonymous structs
+*** DONE Anonymous unions
+*** DONE Anonymous enums
+*** DONE Typedefs to anonymous types.
+*** DONE Nested anonymous types.
+*** DONE "Packed" attribute
+*** TODO Variadic arguments
+*** TODO Non cdecl functions (Important for Win32API)
+*** TODO Pre-processor constant integer expressions
+    Their declarations are not preserved after the pre-processing.
+*** TODO Vector types
+
+* I thought it was python, why am I seeing lisp?
+
+  Hy is sort of a python lisp hybrid.
+  Its written like lisp, but it translate during runtime into python AST.
+  It has interoperability with python, the fact that its written in hy
+  is abstracted to the end user.
+  
+  https://docs.hylang.org/en/stable/whyhy.html
