@@ -26,12 +26,13 @@
       (for [header-file headers]
         (.write include-all-file (.format "#include <{}>\n" header-file)))
       (.flush include-all-file)
-      (setv cpp-result (.run subprocess
-                             (list (chain [cpp-command (. include-all-file name)] cpp-flags))
-                             :check True
-                             :encoding "utf-8"
-                             :stdout (. subprocess PIPE)))
-      (. cpp-result stdout))))
+      (-> (.run subprocess
+                (list (chain [cpp-command (. include-all-file name)]
+                             cpp-flags))
+                :check True
+                :encoding "utf-8"
+                :stdout (. subprocess PIPE))
+          (. stdout)))))
 
 ;; TODO: Better name
 (defclass CDLLX [(. ctypes CDLL)]
