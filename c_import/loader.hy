@@ -10,6 +10,11 @@
 (defn preprocess-headers ^str [^(of Sequence Path) headers
                                ^(of Optional str) cpp-command
                                ^(of Sequence str) cpp-flags]
+
+  ;; Common mistake
+  (assert (not (isinstance headers str))
+          "headrs should be a list of paths, not a single path!")
+
   (unless cpp-command
     (setv cpp-command (.get (. os environ) "CPP" "cpp")))
   (unless cpp-flags
