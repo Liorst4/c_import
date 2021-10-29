@@ -302,11 +302,11 @@
   "Create a CInterface instance from a given header file."
   (setv scope (CInterface :types (dict)
                           :symbols (dict)
-                          :enum-consts (dict))
-        index ((. clang cindex Index create))
-        tu ((. index parse) header)
-        cursor (. tu cursor))
-  (handle-translation-unit scope cursor)
+                          :enum-consts (dict)))
+  (handle-translation-unit scope
+                           (-> (clang.cindex.Index.create)
+                               (.parse header)
+                               (. cursor)))
   (assert (->> (in "" (.keys (. scope types)))
                not))
   scope)
