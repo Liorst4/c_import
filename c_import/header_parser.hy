@@ -120,8 +120,7 @@
              (get (. scope types) type-id))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind ELABORATED))
-         (do (setv type-id (unique-type-name clang-type))
-             (get (. scope types) type-id))]
+             (get (. scope types) (unique-type-name clang-type))]
 
         [(= (. clang-type kind) (. clang cindex TypeKind ENUM))
          (. ctypes c_int)]
