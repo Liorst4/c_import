@@ -3,7 +3,7 @@ import ctypes
 import pytest
 import contextlib
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def libc():
     return c_import.loader.load("libc.so.6", ["stdlib.h",
                                               "stdio.h",
