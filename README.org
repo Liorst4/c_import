@@ -74,3 +74,8 @@ Create C bindings for python automatically with the help of libclang.
   is abstracted to the end user of the library.
   
   https://docs.hylang.org/en/stable/whyhy.html
+
+
+* LICENSE
+  This library is licensed under GNU Lesser General Public License version 3 or later.
+  See COPYING and COPYING.LESSER for further details.
