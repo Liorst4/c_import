@@ -42,7 +42,7 @@ Create C bindings for python automatically with the help of libclang.
 ** The loader wraps symbols with their python ctype.
 
 * Features
-** Syntax parsing
+** Working
 *** DONE Basic C types
 *** DONE Functions
 *** DONE Pointers
@@ -61,6 +61,7 @@ Create C bindings for python automatically with the help of libclang.
 *** DONE Nested anonymous types.
 *** DONE "Packed" attribute
 *** DONE Variadic arguments
+** Not implemented yet
 *** TODO Non cdecl functions (Important for Win32API)
 *** TODO Pre-processor constant integer expressions
     Their declarations are not preserved after the pre-processing.
