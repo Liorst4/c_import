@@ -31,7 +31,7 @@
           .is_anonymous)
       (-> clang-type
           (.get_canonical)
-          ((fn [x] (. x spelling)))
+          (. spelling)
           (hash)
           (abs) ;; TODO: Could cause collisions?
           (hex))
