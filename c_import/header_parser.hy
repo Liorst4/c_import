@@ -33,7 +33,6 @@
           (.get_canonical)
           (. spelling)
           (hash)
-          (abs) ;; TODO: Could cause collisions?
           (hex))
       (-> (. clang-type spelling)
           remove-qualifiers-and-specifiers)))
