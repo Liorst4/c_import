@@ -27,9 +27,68 @@ Create C bindings for python automatically with the help of libclang.
     libc.abs(-1)
     # 1
 
+    # Create instances of structs
+    cal_date = libc.tm()
+    dir(cal_date)
+    # All fields are available
+    # [...,
+    #  'tm_gmtoff',
+    #  'tm_hour',
+    #  'tm_isdst',
+    #  'tm_mday',
+    #  'tm_min',
+    #  'tm_mon',
+    #  'tm_sec',
+    #  'tm_wday',
+    #  'tm_yday',
+    #  'tm_year',
+    #  'tm_zone']
+    cal_date.tm_sec = 1
+    cal_date.tm_year = 1999
+
+    # View the fields of "private" structs
+    # Great when experimenting inside an interactive shell.
+    dir(libc.stdout.contents)
+    # (Fields differ between libc implementations)
+    # [...,
+    #  '_IO_backup_base',
+    #  '_IO_buf_base',
+    #  '_IO_buf_end',
+    #  '_IO_read_base',
+    #  '_IO_read_end',
+    #  '_IO_read_ptr',
+    #  '_IO_save_base',
+    #  '_IO_save_end',
+    #  '_IO_write_base',
+    #  '_IO_write_end',
+    #  '_IO_write_ptr',
+    #  '__pad5',
+    #  '_chain',
+    #  '_codecvt',
+    #  '_cur_column',
+    #  '_fields_',
+    #  '_fileno',
+    #  '_flags',
+    #  '_flags2',
+    #  '_freeres_buf',
+    #  '_freeres_list',
+    #  '_lock',
+    #  '_markers',
+    #  '_mode',
+    #  '_objects',
+    #  '_offset',
+    #  '_old_offset',
+    #  '_shortbuf',
+    #  '_unused2',
+    #  '_vtable_offset',
+    #  '_wide_data']
+    libc.stdout.contents._fileno # 1
+
+    # Functions that return a struct work too
     x = libc.div(49, 8)
     x.quot # 6
     x.rem  # 1
+    x.__class__.__name__ # 'div_t'
 
     # Abort the process
     libc.abort()
