@@ -11,6 +11,7 @@ Create C bindings for python automatically with the help of libclang.
 
     libc = loader.load("libc.so.6", ["stdio.h", "stdint.h", "math.h", "stdlib.h", "string.h", "time.h"])
 
+    # Work with file streams
     filestream = libc.fopen(b"/tmp/x", b"rw+")
     text = ctypes.create_string_buffer(b"Hello world")
     libc.fwrite(text, len(text), 1, fstream)
@@ -24,6 +25,7 @@ Create C bindings for python automatically with the help of libclang.
     libc.fflush(libc.stdout)
     # A
 
+    # Use math functions
     libc.abs(-1)
     # 1
 
