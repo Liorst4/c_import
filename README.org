@@ -24,6 +24,7 @@ Create C bindings for python automatically with the help of libclang.
     libc.fputc(ord('A'), libc.stdout)
     libc.fflush(libc.stdout)
     # A
+    libc.fprintf(libc.stderr, b"%d\n", 100) # 100
 
     # Use math functions
     libc.abs(-1)
