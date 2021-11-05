@@ -129,6 +129,51 @@ Create C bindings for python automatically with the help of libclang.
     Their declarations are not preserved after the pre-processing.
 *** TODO Vector types
 
+* How is it different from using just ctypes?
+
+  The CDLL implementation of cpython assumes that the type of every
+  symbol is
+
+  #+begin_src c
+    int symbol();
+  #+end_src
+
+  (https://github.com/python/cpython/blob/e2d65630f36712dbdbf7711520c985c526a5cc25/Lib/ctypes/__init__.py#L388)
+
+  This works fine for lots of functions.
+
+  #+begin_src python
+    import ctypes
+
+    libc = ctypes.CDLL('libc.so.6')
+
+    libc.printf(b"Hello world %d\n", 5)
+    # Prints Hello world 5
+    # returns 14
+
+    # Also works
+    number = ctypes.c_int()
+    libc.scanf(b"%d", ctypes.pointer(number))
+
+  #+end_src
+
+  But other functions don't work properly.
+
+  #+begin_src python
+    div_result = libc.div(49, 8)
+    # div_result will be a single int instead of div_t!
+  #+end_src
+
+  And global variables aren't really usable.
+
+  #+begin_src python
+    type(libc.stdout)
+    # ctypes.CDLL.__init__.<locals>._FuncPtr
+  #+end_src
+
+  c_import uses libclang to figure out the types of all the symbols
+  instead of assuming there all the same type.
+
 * I thought it was python, why am I seeing lisp?
 
   Hy is sort of a python lisp hybrid.
