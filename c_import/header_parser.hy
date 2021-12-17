@@ -59,90 +59,62 @@
                                   ^(. clang cindex Type) clang-type]
   ;; TODO: Handle anonymous and opaque types
   (assert (. clang-type spelling))
-  ;; TODO: Use macro for kind switch?
-  (cond [(= (. clang-type kind) (. clang cindex TypeKind POINTER))
-         (->> (.get_pointee clang-type)
-              (get-type-or-create-variant scope)
-              (.POINTER ctypes))]
-        [(= (. clang-type kind) (. clang cindex TypeKind BOOL))
-         (. ctypes c_bool)]
-        [(= (. clang-type kind) (. clang cindex TypeKind CHAR_U))
-         (. ctypes c_ubyte)]
-        [(= (. clang-type kind) (. clang cindex TypeKind UCHAR))
-         (. ctypes c_ubyte)]
-        [(= (. clang-type kind) (. clang cindex TypeKind USHORT))
-         (. ctypes c_ushort)]
-        [(= (. clang-type kind) (. clang cindex TypeKind UINT))
-         (. ctypes c_uint)]
-        [(= (. clang-type kind) (. clang cindex TypeKind ULONG))
-         (. ctypes c_ulong)]
-        [(= (. clang-type kind) (. clang cindex TypeKind ULONGLONG))
-         (. ctypes c_ulonglong)]
-        [(= (. clang-type kind) (. clang cindex TypeKind CHAR_S))
-         (. ctypes c_char)]
-        [(= (. clang-type kind) (. clang cindex TypeKind SCHAR))
-         (. ctypes c_char)]
-        [(= (. clang-type kind) (. clang cindex TypeKind WCHAR))
-         (. ctypes c_wchar)]
-        [(= (. clang-type kind) (. clang cindex TypeKind SHORT))
-         (. ctypes c_short)]
-        [(= (. clang-type kind) (. clang cindex TypeKind INT))
-         (. ctypes c_int)]
-        [(= (. clang-type kind) (. clang cindex TypeKind LONG))
-         (. ctypes c_long)]
-        [(= (. clang-type kind) (. clang cindex TypeKind LONGLONG))
-         (. ctypes c_longlong)]
-        [(= (. clang-type kind) (. clang cindex TypeKind FLOAT))
-         (. ctypes c_float)]
-        [(= (. clang-type kind) (. clang cindex TypeKind DOUBLE))
-         (. ctypes c_double)]
-        [(= (. clang-type kind) (. clang cindex TypeKind LONGDOUBLE))
-         (. ctypes c_longdouble)]
+  (match clang-type.kind
+         clang.cindex.TypeKind.BOOL ctypes.c_bool
+         (| clang.cindex.TypeKind.CHAR_U clang.cindex.TypeKind.UCHAR) ctypes.c_ubyte
+         clang.cindex.TypeKind.USHORT ctypes.c_ushort
+         clang.cindex.TypeKind.UINT ctypes.c_uint
+         clang.cindex.TypeKind.ULONG ctypes.c_ulong
+         clang.cindex.TypeKind.ULONGLONG ctypes.c_ulonglong
+         (| clang.cindex.TypeKind.CHAR_S clang.cindex.TypeKind.SCHAR) ctypes.c_char
+         clang.cindex.TypeKind.WCHAR ctypes.c_wchar
+         clang.cindex.TypeKind.SHORT ctypes.c_short
+         (| clang.cindex.TypeKind.INT clang.cindex.TypeKind.ENUM) ctypes.c_int
+         clang.cindex.TypeKind.LONG ctypes.c_long
+         clang.cindex.TypeKind.LONGLONG ctypes.c_longlong
+         clang.cindex.TypeKind.FLOAT ctypes.c_float
+         clang.cindex.TypeKind.DOUBLE ctypes.c_double
+         clang.cindex.TypeKind.LONGDOUBLE ctypes.c_longdouble
+         clang.cindex.TypeKind.VOID None
+         clang.cindex.TypeKind.INVALID (raise ValueError)
 
-        [(= (. clang-type kind) (. clang cindex TypeKind CONSTANTARRAY))
-         ((. ctypes ARRAY) (get-type-or-create-variant scope (. clang-type element_type)) (. clang-type element_count))]
+         clang.cindex.TypeKind.POINTER (->> (.get_pointee clang-type)
+                                            (get-type-or-create-variant scope)
+                                            (.POINTER ctypes))
 
-        [(= (. clang-type kind) (. clang cindex TypeKind FUNCTIONPROTO))
-         ;; TODO: Handle `...`
-         (do (assert (not (.is_function_variadic clang-type)))
-             (.CFUNCTYPE ctypes
-                         (->> clang-type
-                              .get_result
-                              (get-type-or-create-variant scope))
-                         (->> clang-type
-                              .argument_types
-                              (map (fn [x] (get-type-or-create-variant scope x)))
-                              unpack-iterable)))]
+         clang.cindex.TypeKind.CONSTANTARRAY (-> (get-type-or-create-variant scope
+                                                                             clang-type.element_type)
+                                                 (ctypes.ARRAY clang-type.element_count))
 
-        [(= (. clang-type kind) (. clang cindex TypeKind VOID)) None]
+         clang.cindex.TypeKind.FUNCTIONPROTO (do (assert (not (.is_function_variadic clang-type)))
+                                                 (.CFUNCTYPE ctypes
+                                                             (->> clang-type
+                                                                  .get_result
+                                                                  (get-type-or-create-variant scope))
+                                                             (->> clang-type
+                                                                  .argument_types
+                                                                  (map (fn [x] (get-type-or-create-variant scope x)))
+                                                                  unpack-iterable)))
 
-        [(= (. clang-type kind) (. clang
-                                   cindex
-                                   TypeKind
-                                   INCOMPLETEARRAY)) (->> (. clang-type element_type)
-                                                          (get-type-or-create-variant scope)
-                                                          (.POINTER ctypes))]
+         clang.cindex.TypeKind.INCOMPLETEARRAY (->> (. clang-type element_type)
+                                                    (get-type-or-create-variant scope)
+                                                    (.POINTER ctypes))
 
-        [(= (. clang-type kind) (. clang cindex TypeKind TYPEDEF))
-         (->> (.get_canonical clang-type)
-              (get-type-or-create-variant scope))]
+         clang.cindex.TypeKind.TYPEDEF (->> (.get_canonical clang-type)
+                                            (get-type-or-create-variant scope))
 
-        [(= (. clang-type kind) (. clang cindex TypeKind INVALID))
-         (raise (ValueError))]
 
-        [(= (. clang-type kind) (. clang cindex TypeKind RECORD))
-         (do (setv type-id (unique-type-name clang-type))
-             (unless (in type-id (. scope types))
-               (handle-struct-deceleration scope (.get_declaration clang-type)))
-             (get (. scope types) type-id))]
 
-        [(= (. clang-type kind) (. clang cindex TypeKind ELABORATED))
-             (get (. scope types) (unique-type-name clang-type))]
+         clang.cindex.TypeKind.RECORD (let [type-id (unique-type-name clang-type)]
+                                        (unless (in type-id (. scope types))
+                                          (handle-struct-deceleration scope
+                                                                      (.get_declaration clang-type)))
+                                        (get (. scope types) type-id))
 
-        [(= (. clang-type kind) (. clang cindex TypeKind ENUM))
-         (. ctypes c_int)]
+         clang.cindex.TypeKind.ELABORATED (get (. scope types)
+                                               (unique-type-name clang-type))
 
-        [True (raise (NotImplementedError (. clang-type kind)))]))
+         unkown (raise (NotImplementedError unkown))))
 
 (defn handle-typedef-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
   (assert (= (. cursor kind)
