@@ -20,8 +20,7 @@
 (import ctypes
         pathlib
         clang.cindex
-        [typing [Dict Callable Tuple NamedTuple Union Optional
-                 Sequence]])
+        [typing [Dict NamedTuple Union]])
 
 (setv TypeTable (of Dict str type)
       SymbolTable (of Dict str object)
