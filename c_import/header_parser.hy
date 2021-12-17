@@ -134,53 +134,37 @@
         anon-types-to-add [])
 
   (for [child (.get_children cursor)]
-    (cond [(= (. child kind) (. clang
-                                cindex
-                                CursorKind
-                                FIELD_DECL))
-           (.append fields-to-add
-                    (do (setv field [(. child spelling)
-                                     (get-type-or-create-variant
-                                       scope
-                                       (. child type))])
+    (match child.kind
+           clang.cindex.CursorKind.FIELD_DECL (.append fields-to-add
+                                                       (let [field [(. child spelling)
+                                                                    (get-type-or-create-variant scope
+                                                                                                child.type)]]
+                                                         (when (.is_bitfield child)
+                                                           (.append field
+                                                                    (.get_bitfield_width child)))
 
-                        (when (.is_bitfield child)
-                          (.append field (.get_bitfield_width
-                                           child)))
+                                                         ;; If its bounded to a field, than its not suppose to be in _anonymous_
+                                                         (let [field-type-name (. (get field 1) __name__)]
+                                                           (when (in field-type-name anon-types-to-add)
+                                                             (.remove anon-types-to-add field-type-name)))
 
-                        ;; If its bounded to a field, than its not suppose to be in _anonymous_
-                        (do (setv field-type-name (. (get field 1) __name__))
-                            (when (in field-type-name anon-types-to-add)
-                              (.remove anon-types-to-add field-type-name)))
+                                                         (tuple field)))
 
-                        (tuple field)))]
+           clang.cindex.CursorKind.PACKED_ATTR (setv pack-value 1)
 
-          ;; TODO: Move to another function?
-          [(= (. child kind) (. clang
-                                cindex
-                                CursorKind
-                                PACKED_ATTR))
-           (setv pack-value 1)]
+           (| clang.cindex.CursorKind.STRUCT_DECL
+              clang.cindex.CursorKind.UNION_DECL) :as kind (let [handler (match kind
+                                                                                clang.cindex.CursorKind.STRUCT_DECL handle-struct-deceleration
+                                                                                clang.cindex.CursorKind.UNION_DECL handle-union-deceleration)
+                                                                 nested-ctype-name (unique-type-name child.type)]
+                                                             (unless (in nested-ctype-name scope.types)
+                                                               (let [nested-ctype (handler scope child)]
+                                                                 (.append anon-types-to-add nested-ctype-name)
+                                                                 (.append fields-to-add (tuple [nested-ctype-name
+                                                                                                nested-ctype])))))
 
-          ;; TODO: Macro for those two
-          [(= (. child kind) (. clang cindex CursorKind STRUCT_DECL))
-           (do (setv nested-ctype-name (unique-type-name (. child type)))
-               (unless (in nested-ctype-name (. scope types))
-                 (do (setv nested-ctype (handle-struct-deceleration scope
-                                                                    child))
-                     (.append anon-types-to-add nested-ctype-name)
-                     (.append fields-to-add (tuple [nested-ctype-name
-                                                    nested-ctype])))))]
 
-          [(= (. child kind) (. clang cindex CursorKind UNION_DECL))
-           (do (setv nested-ctype-name (unique-type-name (. child type)))
-               (unless (in nested-ctype-name (. scope types))
-                 (do (setv nested-ctype (handle-union-deceleration scope
-                                                                   child))
-                     (.append anon-types-to-add nested-ctype-name)
-                     (.append fields-to-add (tuple [nested-ctype-name
-                                                    nested-ctype])))))]
-          [True (raise (NotImplementedError (. child kind)))]))
+           unkwon (raise (NotImplementedError child.kind))))
 
   (when pack-value
     (setv (. empty-ctype _pack_) pack-value))
