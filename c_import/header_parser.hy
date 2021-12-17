@@ -17,6 +17,8 @@
 ;;
 ;; SPDX-License-Identifier: LGPL-3.0-or-later
 
+(require [hy.contrib.walk [let]])
+
 (import ctypes
         pathlib
         clang.cindex
@@ -295,15 +297,16 @@
   (assoc (. scope symbols) (. cursor spelling) function))
 
 (defn handle-deceleration [^CInterface scope ^(. clang cindex Cursor) cursor]
-  ;; Use a macro?
   (assert (.is_declaration (. cursor kind)))
-  (cond [(= (. cursor kind) (. clang cindex CursorKind TYPEDEF_DECL)) (handle-typedef-deceleration scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind STRUCT_DECL)) (handle-struct-deceleration scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind UNION_DECL)) (handle-union-deceleration scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind ENUM_DECL)) (handle-enum-deceleration scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind VAR_DECL)) (handle-var-deceleration scope cursor)]
-        [(= (. cursor kind) (. clang cindex CursorKind FUNCTION_DECL)) (handle-function-deceleration scope cursor)]
-        [True (raise (NotImplementedError (. cursor kind)))]))
+  (let [handler (match cursor.kind
+                       clang.cindex.CursorKind.TYPEDEF_DECL handle-typedef-deceleration
+                       clang.cindex.CursorKind.STRUCT_DECL handle-struct-deceleration
+                       clang.cindex.CursorKind.UNION_DECL handle-union-deceleration
+                       clang.cindex.CursorKind.ENUM_DECL handle-enum-deceleration
+                       clang.cindex.CursorKind.VAR_DECL handle-var-deceleration
+                       clang.cindex.CursorKind.FUNCTION_DECL handle-function-deceleration
+                       unkown (raise (NotImplementedError unkwon)))]
+    (handler scope cursor)))
 
 (defn handle-translation-unit [^CInterface scope
                                ^(. clang cindex Cursor) cursor]
