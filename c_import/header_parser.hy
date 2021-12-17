@@ -160,8 +160,8 @@
                                                              (unless (in nested-ctype-name scope.types)
                                                                (let [nested-ctype (handler scope child)]
                                                                  (.append anon-types-to-add nested-ctype-name)
-                                                                 (.append fields-to-add (tuple [nested-ctype-name
-                                                                                                nested-ctype])))))
+                                                                 (.append fields-to-add (, nested-ctype-name
+                                                                                           nested-ctype)))))
 
 
            unkwon (raise (NotImplementedError child.kind))))
@@ -193,7 +193,7 @@
 
                   ;; Create a new ctypes class
                   (type type-name
-                        (tuple [ctypes-type])
+                        (, ctypes-type)
                         (dict))))
 
   (assert (not (in " " type-name)))
