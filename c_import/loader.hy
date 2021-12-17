@@ -17,6 +17,8 @@
 ;;
 ;; SPDX-License-Identifier: LGPL-3.0-or-later
 
+(require [hy.contrib.walk [let]])
+
 (import subprocess
         ctypes
         _ctypes
@@ -74,10 +76,10 @@
 
   (defn __getitem__ [self item]
     (cond [(in item self._interface.symbols)
-           (do (setv ctype (get self._interface.symbols item))
-               (if (issubclass ctype _ctypes.CFuncPtr)
-                   (ctype (tuple [item self]))
-                   (.in_dll ctype self item)))]
+           (let [ctype (get self._interface.symbols item)]
+             (if (issubclass ctype _ctypes.CFuncPtr)
+                 (ctype (tuple [item self]))
+                 (.in_dll ctype self item)))]
           [(in item self._interface.enum-consts)
            (get self._interface.enum-consts item)]
           [(in item self._interface.types)
