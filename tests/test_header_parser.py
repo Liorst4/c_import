@@ -929,19 +929,19 @@ def test_header(tmpdir,
 
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, symbols, enum_consts = c_import.header_parser.parse_header(header)
+    interface = c_import.header_parser.parse_header(header)
 
     # Test types
-    assert set(types.keys()) == set(expected_types.keys())
-    for (key, value) in types.items():
+    assert set(interface.types.keys()) == set(expected_types.keys())
+    for (key, value) in interface.types.items():
         assert types_are_equivalent(value, expected_types[key])
 
     # Test symbols
-    assert set(symbols.keys()) == set(expected_symbols.keys())
-    for (key, value) in symbols.items():
+    assert set(interface.symbols.keys()) == set(expected_symbols.keys())
+    for (key, value) in interface.symbols.items():
         assert types_are_equivalent(value, expected_symbols[key])
 
-    assert enum_consts == expected_enum_consts
+    assert interface.enum_consts == expected_enum_consts
 
 def test_struct_with_self_reference(tmpdir):
     header_content = '''
@@ -952,7 +952,7 @@ struct node {
 '''
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, _, _ = c_import.header_parser.parse_header(header)
+    types = c_import.header_parser.parse_header(header).types
     assert 'node' in types
     assert issubclass(types['node'], ctypes.Structure)
     assert types['node']._fields_[0][0] == 'next'
@@ -964,7 +964,7 @@ def test_builtin_record(tmpdir):
     header_content = 'typedef __builtin_va_list thingy;'
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, _, _ = c_import.header_parser.parse_header(header)
+    types = c_import.header_parser.parse_header(header).types
     assert 'thingy' in types
     assert types['thingy'] is not None
     assert any(issubclass(types['thingy'], x) for x in (
@@ -1003,7 +1003,7 @@ union u {
 '''
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, _, _ = c_import.header_parser.parse_header(header)
+    types = c_import.header_parser.parse_header(header).types
 
     assert 's' in types
     assert issubclass(types['s'], ctypes.Structure)
@@ -1056,7 +1056,7 @@ union u {
 '''
     header = tmpdir / 'header.h'
     header.write(header_content)
-    types, _, _ = c_import.header_parser.parse_header(header)
+    types = c_import.header_parser.parse_header(header).types
 
     assert 'other_type' in types
     class other_type(ctypes.Structure):
@@ -1146,7 +1146,7 @@ enum {
 '''
     header = tmpdir / 'header.h'
     header.write(header_content)
-    _, symbols, _ = c_import.header_parser.parse_header(header)
+    symbols = c_import.header_parser.parse_header(header).symbols
     for i in range(1,10):
         assert f'g{i}' in symbols
 

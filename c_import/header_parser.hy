@@ -20,16 +20,14 @@
 (import ctypes
         pathlib
         clang.cindex
-        [typing [Dict NamedTuple Union]])
+        [dataclasses [dataclass]]
+        [typing [Dict Union]])
 
-(setv TypeTable (of Dict str type)
-      SymbolTable (of Dict str object)
-      EnumConstTable (of Dict str int))
-
-(defclass CInterface [NamedTuple]
-  (setv ^TypeTable types (dict)
-        ^SymbolTable symbols (dict)
-        ^EnumConstTable enum-consts (dict)))
+(with-decorator (dataclass :frozen True)
+  (defclass CInterface []
+    (^(of Dict str type) types)
+    (^(of Dict str object) symbols)
+    (^(of Dict str int) enum-consts)))
 
 (defn remove-qualifiers-and-specifiers [name]
   (->> name
