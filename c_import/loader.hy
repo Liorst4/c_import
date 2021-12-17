@@ -21,12 +21,13 @@
         ctypes
         _ctypes
         os
+        [itertools [chain]]
         [tempfile [NamedTemporaryFile]]
         [pathlib [Path]]
         [typing [Sequence Optional]]
         [c_import.header_parser [parse_header CInterface]])
 
-(defn preprocess-headers ^str [^(of Sequence Path) headers
+(defn ^str preprocess-headers [^(of Sequence Path) headers
                                ^(of Optional str) cpp-command
                                ^(of Sequence str) cpp-flags]
 
@@ -58,7 +59,6 @@
   (defn __init__ [self
                   ^Path library
                   ^(of Sequence Path) headers
-                  &optional
                   [cpp-command None]
                   [cpp-flags None]]
     ((. (super) __init__) library)

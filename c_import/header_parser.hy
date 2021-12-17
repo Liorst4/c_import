@@ -43,7 +43,7 @@
                                    "restrict"]))))
        (.join " ")))
 
-(defn unique-type-name ^str [^(. clang cindex Type) clang-type]
+(defn ^str unique-type-name [^(. clang cindex Type) clang-type]
   "Generate the name of the ctype type"
   (if (-> clang-type
           .get_declaration
@@ -315,7 +315,7 @@
   (for [child (.get_children cursor)]
       (handle-deceleration scope child)))
 
-(defn parse-header ^CInterface [^(. pathlib Path) header]
+(defn ^CInterface parse-header [^(. pathlib Path) header]
   "Create a CInterface instance from a given header file."
   (setv scope (CInterface :types (dict)
                           :symbols (dict)
