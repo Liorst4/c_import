@@ -17,30 +17,30 @@
 ;;
 ;; SPDX-License-Identifier: LGPL-3.0-or-later
 
-(require [hy.contrib.walk [let]])
+;; (require [hy.contrib.walk [let]])
 
 (import subprocess
         ctypes
         _ctypes
         os
-        [itertools [chain]]
-        [tempfile [NamedTemporaryFile]]
-        [pathlib [Path]]
-        [typing [Sequence Optional]]
-        [c_import.header_parser [parse_header CInterface]])
+        itertools [chain]
+        tempfile [NamedTemporaryFile]
+        pathlib [Path]
+        typing [Sequence Optional]
+        c_import.header_parser [parse_header CInterface])
 
-(defn ^str preprocess-headers [^(of Sequence Path) headers
-                               ^(of Optional str) cpp-command
-                               ^(of Sequence str) cpp-flags]
+(defn preprocess-headers [headers cpp-command cpp-flags]
 
   ;; Common mistake
   (assert (not (isinstance headers str))
           "headrs should be a list of paths, not a single path!")
 
-  (unless cpp-command
-    (setv cpp-command (.get (. os environ) "CPP" "cpp")))
-  (unless cpp-flags
-    (setv cpp-flags (.get (. os environ) "CPPFLAGS" [])))
+  (if (not cpp-command)
+      (setv cpp-command (.get (. os environ) "CPP" "cpp"))
+      (do ))
+  (if (not cpp-flags)
+      (setv cpp-flags (.get (. os environ) "CPPFLAGS" []))
+      (do ))
   (with [include-all-file (NamedTemporaryFile :mode "w"
                                               :suffix ".h"
                                               :encoding "utf-8")]
@@ -48,43 +48,39 @@
       (for [header-file headers]
         (.write include-all-file (.format "#include <{}>\n" header-file)))
       (.flush include-all-file)
-      (-> (.run subprocess
+      (. (.run subprocess
                 (list (chain [cpp-command (. include-all-file name)]
                              cpp-flags))
                 :check True
                 :encoding "utf-8"
                 :stdout (. subprocess PIPE))
-          (. stdout)))))
+         stdout))))
 
 ;; TODO: Better name
 (defclass CDLLX [(. ctypes CDLL)]
   (defn __init__ [self
-                  ^Path library
-                  ^(of Sequence Path) headers
+                  library
+                  headers
                   [cpp-command None]
                   [cpp-flags None]]
     ((. (super) __init__) library)
     (setv self._interface (with [combined-header (NamedTemporaryFile :mode "w"
                                                                      :encoding "utf-8"
                                                                      :suffix ".h")]
-                            (do (->> (preprocess-headers headers
-                                                         cpp-command
-                                                         cpp-flags)
-                                     (.write combined-header))
+                            (do (.write combined-header (preprocess-headers headers
+                                                                            cpp-command
+                                                                            cpp-flags))
                                 (.flush combined-header)
                                 (parse-header (. combined-header name))))))
 
   (defn __getitem__ [self item]
-    (cond [(in item self._interface.symbols)
-           (let [ctype (get self._interface.symbols item)]
-             (if (issubclass ctype _ctypes.CFuncPtr)
-                 (ctype (tuple [item self]))
-                 (.in_dll ctype self item)))]
-          [(in item self._interface.enum-consts)
-           (get self._interface.enum-consts item)]
-          [(in item self._interface.types)
-           (get self._interface.types item)]
-          [True (raise KeyError)])))
+    (cond (in item self._interface.symbols) (let [ctype (get self._interface.symbols item)]
+                                              (if (issubclass ctype _ctypes.CFuncPtr)
+                                                  (ctype (tuple [item self]))
+                                                  (.in_dll ctype self item)))
+          (in item self._interface.enum-consts) (get self._interface.enum-consts item)
+          (in item self._interface.types) (get self._interface.types item)
+          True (raise KeyError))))
 
 
 ;; TODO: Delete?
