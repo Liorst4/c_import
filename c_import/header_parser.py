@@ -17,10 +17,27 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+import typing
 import pathlib
 import clang
 
 from c_import._header_parser import *
+
+
+_DECELERATION_HANDLER = {
+    clang.cindex.CursorKind.TYPEDEF_DECL: handle_typedef_deceleration,
+    clang.cindex.CursorKind.STRUCT_DECL: handle_struct_deceleration,
+    clang.cindex.CursorKind.UNION_DECL: handle_union_deceleration,
+    clang.cindex.CursorKind.ENUM_DECL: handle_enum_deceleration,
+    clang.cindex.CursorKind.VAR_DECL: handle_var_deceleration,
+    clang.cindex.CursorKind.FUNCTION_DECL: handle_function_deceleration,
+}
+
+def handle_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
+    assert cursor.kind.is_declaration()
+    if cursor.kind not in _DECELERATION_HANDLER:
+        raise NotImplementedError(cursor.kind)
+    _DECELERATION_HANDLER[cursor.kind](scope, cursor)
 
 
 def handle_translation_unit(scope: CInterface, cursor: clang.cindex.Cursor):

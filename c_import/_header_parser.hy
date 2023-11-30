@@ -225,15 +225,3 @@
                              (unpack-iterable (map (fn [x] (get-type-or-create-variant scope (. x type)))
                                                    (.get_arguments cursor)))))
   (setv (get (. scope symbols) (. cursor spelling)) function))
-
-(defn handle-deceleration [#^ CInterface scope #^ (. clang cindex Cursor) cursor]
-  (assert (.is_declaration (. cursor kind)))
-  (let [handler (match cursor.kind
-                       clang.cindex.CursorKind.TYPEDEF_DECL handle-typedef-deceleration
-                       clang.cindex.CursorKind.STRUCT_DECL handle-struct-deceleration
-                       clang.cindex.CursorKind.UNION_DECL handle-union-deceleration
-                       clang.cindex.CursorKind.ENUM_DECL handle-enum-deceleration
-                       clang.cindex.CursorKind.VAR_DECL handle-var-deceleration
-                       clang.cindex.CursorKind.FUNCTION_DECL handle-function-deceleration
-                       unkown (raise (NotImplementedError unkwon)))]
-    (handler scope cursor)))
