@@ -17,4 +17,17 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+import pathlib
+import clang
+
 from c_import._header_parser import *
+
+
+def parse_header(header: pathlib.Path) -> CInterface:
+    scope = CInterface(types=dict(), symbols=dict(), enum_consts=dict())
+    handle_translation_unit(
+        scope,
+        clang.cindex.Index.create().parse(header).cursor
+    )
+    assert "" not in scope.types.keys()
+    return scope

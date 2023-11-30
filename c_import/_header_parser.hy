@@ -245,14 +245,3 @@
   (for [child (.get_children cursor)]
       (handle-deceleration scope child)))
 
-(defn #^ CInterface parse-header [#^ (. pathlib Path) header]
-  "Create a CInterface instance from a given header file."
-  (setv scope (CInterface :types (dict)
-                          :symbols (dict)
-                          :enum-consts (dict)))
-  (handle-translation-unit scope
-                           (. (.parse (clang.cindex.Index.create)
-                                      header)
-                              cursor))
-  (assert (not (in "" (.keys (. scope types)))))
-  scope)
