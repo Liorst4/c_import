@@ -23,6 +23,12 @@ import clang
 from c_import._header_parser import *
 
 
+def handle_translation_unit(scope: CInterface, cursor: clang.cindex.Cursor):
+    assert cursor.kind == clang.cindex.CursorKind.TRANSLATION_UNIT
+    for child in cursor.get_children():
+        handle_deceleration(scope, child)
+
+
 def parse_header(header: pathlib.Path) -> CInterface:
     scope = CInterface(types=dict(), symbols=dict(), enum_consts=dict())
     handle_translation_unit(

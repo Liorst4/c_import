@@ -237,11 +237,3 @@
                        clang.cindex.CursorKind.FUNCTION_DECL handle-function-deceleration
                        unkown (raise (NotImplementedError unkwon)))]
     (handler scope cursor)))
-
-(defn handle-translation-unit [#^ CInterface scope
-                               #^ (. clang cindex Cursor) cursor]
-  (assert (= (. cursor kind)
-             (. clang cindex CursorKind TRANSLATION_UNIT)))
-  (for [child (.get_children cursor)]
-      (handle-deceleration scope child)))
-
