@@ -22,9 +22,43 @@ import _ctypes
 import typing
 import pathlib
 import tempfile
+import os
+import subprocess
 
 import c_import.header_parser
-from c_import._loader import *
+
+
+def preprocess_headers(
+        headers: typing.Sequence[pathlib.Path],
+        cpp_command: typing.Optional[str] = None,
+        cpp_flags: typing.Optional[str] = None,
+):
+    # Common mistake
+    assert not isinstance(headers, str), 'headrs should be a list of paths, not a single path!'
+
+    if cpp_command is None:
+        cpp_command = os.environ.get('CPP', 'cpp')
+
+    if cpp_flags is None:
+        cpp_flags = os.environ.get('CPPFLAGS', None)
+
+    with tempfile.NamedTemporaryFile(
+            mode='w',
+            suffix='.h',
+            encoding='utf-8'
+    ) as include_all_file:
+        for header_file in headers:
+            include_all_file.write(f'#include <{header_file}>\n')
+        include_all_file.flush()
+        command = [cpp_command, include_all_file.name]
+        if cpp_flags is not None:
+            command.append(cpp_flags)
+        return subprocess.run(
+            command,
+            check=True,
+            encoding='utf-8',
+            stdout=subprocess.PIPE,
+        ).stdout
 
 # TODO: Better name
 class CDLLX(ctypes.CDLL):
@@ -66,3 +100,5 @@ class CDLLX(ctypes.CDLL):
         raise KeyError
 
 load = CDLLX
+
+
