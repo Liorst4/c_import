@@ -17,6 +17,52 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+import ctypes
+import _ctypes
+import typing
+import pathlib
+import tempfile
+
+import c_import.header_parser
 from c_import._loader import *
+
+# TODO: Better name
+class CDLLX(ctypes.CDLL):
+    def __init__(
+            self,
+            library,
+            headers: typing.Sequence[pathlib.Path],
+            cpp_command: typing.Optional[str]=None,
+            cpp_flags: typing.Optional[str]=None
+    ):
+        super().__init__(library)
+        with tempfile.NamedTemporaryFile(
+                mode='w',
+                encoding='utf-8',
+                suffix='.h'
+        ) as combined_header:
+            combined_header.write(preprocess_headers(
+                headers,
+                cpp_command,
+                cpp_flags
+            ))
+            combined_header.flush()
+            self._interface = c_import.header_parser.parse_header(combined_header.name)
+
+    def __getitem__(self, item):
+        if item in self._interface.symbols:
+            ctype = self._interface.symbols.get(item)
+            if issubclass(ctype, _ctypes.CFuncPtr):
+                return ctype((item, self))
+            else:
+                return ctype.in_dll(self, item)
+
+        if item in self._interface.enum_consts:
+            return self._interface.enum_consts.get(item)
+
+        if item in self._interface.types:
+            return self._interface.types.get(item)
+
+        raise KeyError
 
 load = CDLLX

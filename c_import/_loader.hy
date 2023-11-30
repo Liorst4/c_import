@@ -55,29 +55,3 @@
                 :encoding "utf-8"
                 :stdout (. subprocess PIPE))
          stdout))))
-
-;; TODO: Better name
-(defclass CDLLX [(. ctypes CDLL)]
-  (defn __init__ [self
-                  library
-                  headers
-                  [cpp-command None]
-                  [cpp-flags None]]
-    ((. (super) __init__) library)
-    (setv self._interface (with [combined-header (NamedTemporaryFile :mode "w"
-                                                                     :encoding "utf-8"
-                                                                     :suffix ".h")]
-                            (do (.write combined-header (preprocess-headers headers
-                                                                            cpp-command
-                                                                            cpp-flags))
-                                (.flush combined-header)
-                                (parse-header (. combined-header name))))))
-
-  (defn __getitem__ [self item]
-    (cond (in item self._interface.symbols) (let [ctype (get self._interface.symbols item)]
-                                              (if (issubclass ctype _ctypes.CFuncPtr)
-                                                  (ctype (tuple [item self]))
-                                                  (.in_dll ctype self item)))
-          (in item self._interface.enum-consts) (get self._interface.enum-consts item)
-          (in item self._interface.types) (get self._interface.types item)
-          True (raise KeyError))))
