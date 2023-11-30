@@ -26,6 +26,15 @@ import clang
 from c_import._header_parser import *
 
 
+def handle_enum_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
+    assert cursor.kind == clang.cindex.CursorKind.ENUM_DECL
+    enum_name = unique_type_name(cursor.type)
+    scope.types[enum_name] = ctypes.c_int
+    for c in cursor.get_children():
+        assert c.kind == clang.cindex.CursorKind.ENUM_CONSTANT_DECL
+        scope.enum_consts[c.spelling] = c.enum_value
+
+
 def handle_var_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
     assert cursor.kind == clang.cindex.CursorKind.VAR_DECL
     var_type = get_type_or_create_variant(scope, cursor.type)

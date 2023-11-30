@@ -195,17 +195,3 @@
                         (. ctypes Union)
                         scope
                         cursor))
-
-(defn handle-enum-deceleration [#^ CInterface scope #^ (. clang cindex Cursor) cursor]
-  (assert (= (. cursor kind)
-             (. clang cindex CursorKind ENUM_DECL)))
-  (setv enum-name (unique-type-name (. cursor type)))
-  (setv (get (. scope types) enum-name) (. ctypes c_int))
-  (for [c (.get_children cursor)]
-    (do (assert (= (. clang
-                      cindex
-                      CursorKind
-                      ENUM_CONSTANT_DECL)
-                   (. c kind)))
-        (setv (get (. scope enum-consts) (. c spelling))
-              (. c enum_value)))))
