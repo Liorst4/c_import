@@ -92,8 +92,7 @@
                                             (do ))
                                         (get (. scope types) type-id))
 
-         clang.cindex.TypeKind.ELABORATED (get (. scope types)
-                                               (unique-type-name clang-type))
+         clang.cindex.TypeKind.ELABORATED (get-type-or-create-variant scope (.get_canonical clang-type))
 
          unkown (raise (NotImplementedError unkown))))
 
