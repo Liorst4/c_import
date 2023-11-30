@@ -209,9 +209,3 @@
                    (. c kind)))
         (setv (get (. scope enum-consts) (. c spelling))
               (. c enum_value)))))
-
-(defn handle-var-deceleration [#^ CInterface scope #^ (. clang cindex Cursor) cursor]
-  (assert (= (. cursor kind)
-             (. clang cindex CursorKind VAR_DECL)))
-  (setv var-type (get-type-or-create-variant scope (. cursor type)))
-  (setv (get (. scope symbols) (. cursor spelling)) var-type))

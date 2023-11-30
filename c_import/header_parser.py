@@ -26,6 +26,12 @@ import clang
 from c_import._header_parser import *
 
 
+def handle_var_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
+    assert cursor.kind == clang.cindex.CursorKind.VAR_DECL
+    var_type = get_type_or_create_variant(scope, cursor.type)
+    scope.symbols[cursor.spelling] = var_type
+
+
 def handle_function_deceleration(
         scope: CInterface,
         cursor: clang.cindex.Cursor
