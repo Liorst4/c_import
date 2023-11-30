@@ -215,13 +215,3 @@
              (. clang cindex CursorKind VAR_DECL)))
   (setv var-type (get-type-or-create-variant scope (. cursor type)))
   (setv (get (. scope symbols) (. cursor spelling)) var-type))
-
-(defn handle-function-deceleration [#^ CInterface scope #^ (. clang cindex Cursor) cursor]
-  ;; TODO: Handle stdcall
-  (assert (= (. cursor kind)
-             (. clang cindex CursorKind FUNCTION_DECL)))
-  (setv function (.CFUNCTYPE ctypes
-                             (get-type-or-create-variant scope (. cursor result_type))
-                             (unpack-iterable (map (fn [x] (get-type-or-create-variant scope (. x type)))
-                                                   (.get_arguments cursor)))))
-  (setv (get (. scope symbols) (. cursor spelling)) function))

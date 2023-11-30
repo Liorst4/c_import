@@ -19,9 +19,27 @@
 
 import typing
 import pathlib
+import ctypes
+
 import clang
 
 from c_import._header_parser import *
+
+
+def handle_function_deceleration(
+        scope: CInterface,
+        cursor: clang.cindex.Cursor
+):
+    # TODO: Handle stdcall
+    assert cursor.kind == clang.cindex.CursorKind.FUNCTION_DECL
+    function = ctypes.CFUNCTYPE(
+        get_type_or_create_variant(scope, cursor.result_type),
+        *map(
+            lambda x:get_type_or_create_variant(scope, x.type),
+            cursor.get_arguments(),
+        )
+    )
+    scope.symbols[cursor.spelling] = function
 
 
 _DECELERATION_HANDLER = {
