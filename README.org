@@ -123,12 +123,11 @@ Create C bindings for python automatically with the help of libclang.
 *** DONE Nested anonymous types.
 *** DONE "Packed" attribute
 *** DONE Variadic arguments
+*** DONE Vector types
 ** Not implemented yet
 *** TODO Non cdecl functions (Important for Win32API)
 *** TODO Pre-processor constant integer expressions
     Their declarations are not preserved after the pre-processing.
-*** TODO Vector types
-
 * How is it different from using just ctypes?
 
   The CDLL implementation of cpython assumes that the type of every

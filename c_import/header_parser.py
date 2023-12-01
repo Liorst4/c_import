@@ -98,7 +98,10 @@ def get_type_or_create_variant(
     if clang_type.kind == clang.cindex.TypeKind.POINTER:
         return ctypes.POINTER(get_type_or_create_variant(scope, clang_type.get_pointee()))
 
-    if clang_type.kind == clang.cindex.TypeKind.CONSTANTARRAY:
+    if clang_type.kind in (
+            clang.cindex.TypeKind.CONSTANTARRAY,
+            clang.cindex.TypeKind.VECTOR,
+    ):
         return ctypes.ARRAY(
             get_type_or_create_variant(scope, clang_type.element_type),
             clang_type.element_count,

@@ -1191,3 +1191,25 @@ enum {
     assert symbols['g7'] == ctypes.c_int
     assert symbols['g8'] == ctypes.c_int
     assert symbols['g9'] == ctypes.POINTER(ctypes.c_int)
+
+
+def test_vector_types(tmpdir):
+    header_content = '''
+#include <stdint.h>
+typedef uint32_t four_uint32_t __attribute__((__vector_size__(16)));
+typedef uint32_t five_uint32_t __attribute__((__vector_size__(20)));
+typedef uint64_t uint128_t __attribute__((__vector_size__(16)));
+typedef uint8_t weird_short __attribute__((__vector_size__(2)));
+'''
+
+    header = tmpdir / 'header.h'
+    header.write(header_content)
+    types = c_import.header_parser.parse_header(header).types
+
+    for (name, expected_byte_count) in (
+            ('four_uint32_t', 16),
+            ('five_uint32_t', 20),
+            ('uint128_t', 16),
+            ('weird_short', 2),
+    ):
+        assert ctypes.sizeof(types[name]) == expected_byte_count
