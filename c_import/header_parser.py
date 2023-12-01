@@ -151,7 +151,7 @@ def handle_type_deceleration_body(
 
     fields_to_add = []
     pack_value = None
-    anon_types_to_add = []
+    anon_types_to_add: typing.List[str] = []
 
     for child in cursor.get_children():
         if child.kind == clang.cindex.CursorKind.FIELD_DECL:
@@ -188,16 +188,16 @@ def handle_type_deceleration_body(
             raise NotImplementedError(child.kind)
 
     if pack_value is not None:
-        empty_type._pack_ = pack_value
+        setattr(empty_type, '_pack_', pack_value)
 
     if len(anon_types_to_add) != 0:
         for t in map(lambda x: scope.types[x], anon_types_to_add):
             if not hasattr(t, '_fields_'):
                 setattr(t, '_fields_', [])
-        empty_type._anonymous_ = anon_types_to_add
+        setattr(empty_type, '_anonymous_', anon_types_to_add)
 
     if len(fields_to_add) != 0:
-        empty_type._fields_ = fields_to_add
+        setattr(empty_type, '_fields_', fields_to_add)
 
 
 def add_type_with_fields(
