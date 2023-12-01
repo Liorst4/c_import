@@ -22,11 +22,6 @@
         clang.cindex
         dataclasses [dataclass])
 
-(defclass [(dataclass :frozen True)] CInterface []
-  #^ dict types
-  #^ dict symbols
-  #^ dict enum-consts)
-
 (defn remove-qualifiers-and-specifiers [name]
   (setv qualifiers-and-specifiers ["const"
                                    "volatile"

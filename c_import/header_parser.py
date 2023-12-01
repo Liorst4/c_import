@@ -20,10 +20,18 @@
 import typing
 import pathlib
 import ctypes
+import dataclasses
 
 import clang
 
 from c_import._header_parser import *
+
+
+@dataclasses.dataclass(frozen=True)
+class CInterface:
+    types: dict[str, type]
+    symbols: dict[str, object]
+    enum_consts: dict[str, int]
 
 
 _CLANG_KIND_CTYPE_MAP = {
