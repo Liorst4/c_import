@@ -102,10 +102,12 @@ def get_type_or_create_variant(
             clang.cindex.TypeKind.CONSTANTARRAY,
             clang.cindex.TypeKind.VECTOR,
     ):
-        return ctypes.ARRAY(
-            get_type_or_create_variant(scope, clang_type.element_type),
-            clang_type.element_count,
+        element_ctype = get_type_or_create_variant(
+            scope,
+            clang_type.element_type
         )
+        assert element_ctype is not None
+        return element_ctype * clang_type.element_count
 
     if clang_type.kind == clang.cindex.TypeKind.FUNCTIONPROTO:
         assert not clang_type.is_function_variadic()
