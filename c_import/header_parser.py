@@ -28,7 +28,7 @@ import clang.cindex
 
 @dataclasses.dataclass(frozen=True)
 class CInterface:
-    types: dict[str, type]
+    types: dict[str, typing.Optional[type]]
     symbols: dict[str, object]
     enum_consts: dict[str, int]
 
@@ -214,6 +214,7 @@ def add_type_with_fields(
         # to expand.
         # TODO: Verifiy its a forward deceleration
         ctype = scope.types[type_name]
+        assert ctype is not None
     else:
         # Create a new ctypes class
         ctype = type(type_name, (ctypes_type, ), dict())
