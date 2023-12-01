@@ -81,7 +81,7 @@ class CDLLX(ctypes.CDLL):
                 cpp_flags
             ))
             combined_header.flush()
-            self._interface = c_import.header_parser.parse_header(combined_header.name)
+            self._interface = c_import.header_parser.parse_header(pathlib.Path(combined_header.name))
 
     def __getitem__(self, item):
         if item in self._interface.symbols:
