@@ -25,9 +25,5 @@ setup(
     packages=find_packages(),
     install_requires=[
         'clang',
-        'hy==0.27.0',
     ],
-    package_data={
-        'c_import': ['*.hy'],
-    },
 )

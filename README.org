@@ -174,16 +174,6 @@ Create C bindings for python automatically with the help of libclang.
   c_import uses libclang to figure out the types of all the symbols
   instead of assuming there all the same type.
 
-* I thought it was python, why am I seeing lisp?
-
-  Hy is sort of a python lisp hybrid.
-  Its written like lisp, but its translated during runtime into python.
-  It has interoperability with python, the fact that its written in hy
-  is abstracted to the end user of the library.
-  
-  https://docs.hylang.org/en/stable/whyhy.html
-
-
 * LICENSE
   This library is licensed under GNU Lesser General Public License version 3 or later.
   See COPYING and COPYING.LESSER for further details.

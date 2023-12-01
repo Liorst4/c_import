@@ -23,8 +23,7 @@ import ctypes
 import dataclasses
 
 import clang
-
-from c_import._header_parser import *
+import clang.cindex
 
 
 @dataclasses.dataclass(frozen=True)
