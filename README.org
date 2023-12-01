@@ -128,6 +128,8 @@ Create C bindings for python automatically with the help of libclang.
 *** TODO Non cdecl functions (Important for Win32API)
 *** TODO Pre-processor constant integer expressions
     Their declarations are not preserved after the pre-processing.
+*** TODO Complex numbers
+*** TODO Atomic types
 * How is it different from using just ctypes?
 
   The CDLL implementation of cpython assumes that the type of every

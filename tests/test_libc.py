@@ -24,10 +24,40 @@ import contextlib
 
 @pytest.fixture(scope="session")
 def libc():
-    return c_import.loader.load("libc.so.6", ["stdlib.h",
-                                              "stdio.h",
-                                              "math.h",
-                                              "string.h"])
+    return c_import.loader.load(
+        "libc.so.6",
+        [
+            "assert.h",
+            # "complex.h", TODO: Not supported yet
+            "ctype.h",
+            "errno.h",
+            "fenv.h",
+            "float.h",
+            "inttypes.h",
+            "iso646.h",
+            "limits.h",
+            "locale.h",
+            "math.h",
+            "setjmp.h",
+            "signal.h",
+            "stdalign.h",
+            "stdarg.h",
+            # "stdatomic.h", TODO: Not supported yet
+            "stdbool.h",
+            "stddef.h",
+            "stdint.h",
+            "stdio.h",
+            "stdlib.h",
+            "stdnoreturn.h",
+            "string.h",
+            # "tgmath.h", TODO: Not supported yet
+            "threads.h",
+            "time.h",
+            "uchar.h",
+            "wchar.h",
+            "wctype.h",
+        ]
+    )
 
 def test_stream_globals(libc):
     assert libc.stdin
