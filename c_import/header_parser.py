@@ -34,6 +34,14 @@ class CInterface:
     enum_consts: dict[str, int]
 
 
+def unique_type_name(clang_type: clang.cindex.Type) -> str:
+    '''Generate the name of the ctype type'''
+    if clang_type.get_declaration().is_anonymous():
+        return hex(hash(clang_type.get_canonical().spelling))
+
+    return remove_qualifiers_and_specifiers(clang_type.spelling)
+
+
 _CLANG_KIND_CTYPE_MAP = {
     clang.cindex.TypeKind.BOOL: ctypes.c_bool,
     clang.cindex.TypeKind.CHAR_U: ctypes.c_ubyte,

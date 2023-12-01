@@ -32,9 +32,3 @@
   (setv words (.split name))
   (setv filtered-words (filter (fn [x] (not (in x qualifiers-and-specifiers))) words))
   (return (.join " " filtered-words)))
-
-(defn unique-type-name [#^(. clang cindex Type) clang-type]
-  "Generate the name of the ctype type"
-  (if (.is_anonymous (.get_declaration clang-type))
-      (hex (hash (. (.get_canonical clang-type) spelling)))
-      (remove-qualifiers-and-specifiers (. clang-type spelling))))
