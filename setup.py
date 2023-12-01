@@ -1,4 +1,4 @@
-# Copyright (C) 2022  Lior Stern
+# Copyright (C) 2023  Lior Stern
 #
 # This file is part of c_import.
 #
