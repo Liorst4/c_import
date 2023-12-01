@@ -26,6 +26,11 @@ import clang
 from c_import._header_parser import *
 
 
+def handle_typedef_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
+    assert cursor.kind == clang.cindex.CursorKind.TYPEDEF_DECL
+    scope.types[cursor.spelling] = get_type_or_create_variant(scope, cursor.underlying_typedef_type)
+
+
 def handle_enum_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
     assert cursor.kind == clang.cindex.CursorKind.ENUM_DECL
     enum_name = unique_type_name(cursor.type)

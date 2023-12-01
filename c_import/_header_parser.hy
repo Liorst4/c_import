@@ -96,13 +96,6 @@
 
          unkown (raise (NotImplementedError unkown))))
 
-(defn handle-typedef-deceleration [#^ CInterface scope #^ (. clang cindex Cursor) cursor]
-  (assert (= (. cursor kind)
-             (. clang cindex CursorKind TYPEDEF_DECL)))
-  (setv (get (. scope types) (. cursor spelling))
-        (get-type-or-create-variant scope
-                                    (. cursor underlying_typedef_type))))
-
 (defn handle-type-declaration-body [#^ CInterface scope
                                     #^ (. clang cindex Cursor) cursor
                                     #^ type empty-ctype]
