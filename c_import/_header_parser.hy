@@ -16,19 +16,3 @@
 ;; along with c_import.  If not, see <https://www.gnu.org/licenses/>.
 ;;
 ;; SPDX-License-Identifier: LGPL-3.0-or-later
-
-(import ctypes
-        pathlib
-        clang.cindex
-        dataclasses [dataclass])
-
-(defn remove-qualifiers-and-specifiers [name]
-  (setv qualifiers-and-specifiers ["const"
-                                   "volatile"
-                                   "enum"
-                                   "struct"
-                                   "union"
-                                   "restrict"])
-  (setv words (.split name))
-  (setv filtered-words (filter (fn [x] (not (in x qualifiers-and-specifiers))) words))
-  (return (.join " " filtered-words)))

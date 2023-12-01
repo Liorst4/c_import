@@ -34,6 +34,24 @@ class CInterface:
     enum_consts: dict[str, int]
 
 
+QUALIFIERS_AND_SPECIFIERS = (
+    "const",
+    "volatile",
+    "enum",
+    "struct",
+    "union",
+    "restrict",
+)
+
+def remove_qualifiers_and_specifiers(name: str) -> str:
+    words = name.split()
+    filtered_words = filter(
+        lambda x: x not in QUALIFIERS_AND_SPECIFIERS,
+        words,
+    )
+    return ' '.join(filtered_words)
+
+
 def unique_type_name(clang_type: clang.cindex.Type) -> str:
     '''Generate the name of the ctype type'''
     if clang_type.get_declaration().is_anonymous():
