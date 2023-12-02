@@ -29,7 +29,7 @@ import clang.cindex
 @dataclasses.dataclass(frozen=True)
 class CInterface:
     types: dict[str, typing.Optional[type]]
-    symbols: dict[str, object]
+    symbols: dict[str, type]
     enum_consts: dict[str, int]
 
 
@@ -261,6 +261,7 @@ def handle_enum_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
 def handle_var_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
     assert cursor.kind == clang.cindex.CursorKind.VAR_DECL
     var_type = get_type_or_create_variant(scope, cursor.type)
+    assert var_type is not None
     scope.symbols[cursor.spelling] = var_type
 
 
