@@ -28,8 +28,13 @@ import clang.cindex
 
 @dataclasses.dataclass(frozen=True)
 class CInterface:
+    # Association between type name and a ctypes class
     types: dict[str, typing.Optional[type]]
+
+    # Association between a symbol and its type
     symbols: dict[str, type]
+
+    # Association between an enum constant and its value
     enum_consts: dict[str, int]
 
 
