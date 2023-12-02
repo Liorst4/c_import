@@ -80,15 +80,17 @@ class CDLLX(ctypes.CDLL):
                 cpp_flags
             ))
             combined_header.flush()
-            self._interface = c_import.header_parser.parse_header(pathlib.Path(combined_header.name))
+            self._interface = c_import.header_parser.parse_header(
+                pathlib.Path(combined_header.name)
+            )
 
     def __getitem__(self, item):
         if item in self._interface.symbols:
             ctype = self._interface.symbols.get(item)
             if issubclass(ctype, ctypes._CFuncPtr):
                 return ctype((item, self))
-            else:
-                return ctype.in_dll(self, item)
+
+            return ctype.in_dll(self, item)
 
         if item in self._interface.enum_consts:
             return self._interface.enum_consts.get(item)
@@ -98,6 +100,6 @@ class CDLLX(ctypes.CDLL):
 
         raise KeyError
 
-load = CDLLX
 
-
+def load(*args, **kwargs) -> CDLLX:
+    return CDLLX(*args, **kwargs)

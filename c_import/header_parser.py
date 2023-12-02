@@ -169,7 +169,7 @@ def handle_type_deceleration_body(
             if field_type_name in anon_types_to_add:
                 anon_types_to_add.remove(field_type_name)
 
-            assert(field[1] != None)
+            assert field[1] is not None
             fields_to_add.append(tuple(field))
 
         elif child.kind == clang.cindex.CursorKind.PACKED_ATTR:
@@ -196,9 +196,9 @@ def handle_type_deceleration_body(
         setattr(empty_type, '_pack_', pack_value)
 
     if len(anon_types_to_add) != 0:
-        for t in map(lambda x: scope.types[x], anon_types_to_add):
-            if not hasattr(t, '_fields_'):
-                setattr(t, '_fields_', [])
+        for anon_type in map(lambda x: scope.types[x], anon_types_to_add):
+            if not hasattr(anon_type, '_fields_'):
+                setattr(anon_type, '_fields_', [])
         setattr(empty_type, '_anonymous_', anon_types_to_add)
 
     if len(fields_to_add) != 0:
@@ -222,7 +222,7 @@ def add_type_with_fields(
         assert ctype is not None
     else:
         # Create a new ctypes class
-        ctype = type(type_name, (ctypes_type, ), dict())
+        ctype = type(type_name, (ctypes_type, ), {})
 
     assert " " not in type_name
     scope.types[type_name] = ctype  # Add refrence to table
@@ -258,9 +258,9 @@ def handle_enum_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
     assert cursor.kind == clang.cindex.CursorKind.ENUM_DECL
     enum_name = unique_type_name(cursor.type)
     scope.types[enum_name] = ctypes.c_int
-    for c in cursor.get_children():
-        assert c.kind == clang.cindex.CursorKind.ENUM_CONSTANT_DECL
-        scope.enum_consts[c.spelling] = c.enum_value
+    for child in cursor.get_children():
+        assert child.kind == clang.cindex.CursorKind.ENUM_CONSTANT_DECL
+        scope.enum_consts[child.spelling] = child.enum_value
 
 
 def handle_var_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
@@ -309,7 +309,7 @@ def handle_translation_unit(scope: CInterface, cursor: clang.cindex.Cursor):
 
 
 def parse_header(header: pathlib.Path) -> CInterface:
-    scope = CInterface(types=dict(), symbols=dict(), enum_consts=dict())
+    scope = CInterface(types={}, symbols={}, enum_consts={})
     handle_translation_unit(
         scope,
         clang.cindex.Index.create().parse(header).cursor
