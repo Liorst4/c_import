@@ -18,7 +18,6 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import ctypes
-import _ctypes
 import typing
 import pathlib
 import tempfile
@@ -86,7 +85,7 @@ class CDLLX(ctypes.CDLL):
     def __getitem__(self, item):
         if item in self._interface.symbols:
             ctype = self._interface.symbols.get(item)
-            if issubclass(ctype, _ctypes.CFuncPtr):
+            if issubclass(ctype, ctypes._CFuncPtr):
                 return ctype((item, self))
             else:
                 return ctype.in_dll(self, item)
