@@ -286,6 +286,11 @@ def handle_function_deceleration(
     scope.symbols[cursor.spelling] = function
 
 
+def handle_static_assert(*args, **kwargs):
+    # Do nothing
+    pass
+
+
 _DECELERATION_HANDLER = {
     clang.cindex.CursorKind.TYPEDEF_DECL: handle_typedef_deceleration,
     clang.cindex.CursorKind.STRUCT_DECL: handle_struct_deceleration,
@@ -293,6 +298,9 @@ _DECELERATION_HANDLER = {
     clang.cindex.CursorKind.ENUM_DECL: handle_enum_deceleration,
     clang.cindex.CursorKind.VAR_DECL: handle_var_deceleration,
     clang.cindex.CursorKind.FUNCTION_DECL: handle_function_deceleration,
+
+    # Apparently static assert counts as a deceleration
+    clang.cindex.CursorKind.STATIC_ASSERT: handle_static_assert,
 }
 
 def handle_deceleration(scope: CInterface, cursor: clang.cindex.Cursor):
